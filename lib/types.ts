@@ -14,20 +14,16 @@ export interface Club extends PBRecord {
 }
 
 export interface ClubMember extends PBRecord {
-  club:       string; // Club.id
-  user:       string; // PB user id
-  user_name:  string;
-  user_email: string;
-  role:       'captain' | 'member';
-  points:     number;
+  club:   string;  // Club.id
+  user:   string;  // PB user id
+  role:   'captain' | 'member';
+  points: number;
 }
 
 export interface JoinRequest extends PBRecord {
-  club:       string;
-  user:       string;
-  user_name:  string;
-  user_email: string;
-  status:     'pending' | 'approved' | 'rejected';
+  club:   string;
+  user:   string;
+  status: 'pending' | 'approved' | 'rejected';
 }
 
 export interface Route extends PBRecord {

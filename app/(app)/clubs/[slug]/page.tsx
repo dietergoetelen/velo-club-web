@@ -71,6 +71,20 @@ export default async function ClubPage({
       }).catch(() => [])
     : [];
 
+  // Fetch user details for members + pending requests (viewRule allows this after migration 003)
+  const userIds = [...new Set([
+    ...members.map(m => m.user),
+    ...pendingRequests.map(r => r.user),
+  ])];
+  const usersById: Record<string, { name: string; username: string; email: string }> = {};
+  await Promise.all(
+    userIds.map(id =>
+      pb.collection('users').getOne(id)
+        .then(u => { usersById[id] = { name: u['name'] as string, username: u['username'] as string, email: u['email'] as string }; })
+        .catch(() => {}),
+    ),
+  );
+
   const rides = await pb.collection('routes').getFullList<Route>({
     filter: `club = "${club.id}" && status != "cancelled"`,
     sort:   'date',
@@ -168,10 +182,8 @@ export default async function ClubPage({
                 style={index !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
               >
                 <div>
-                  <p className="font-bold text-ink">{req.user_name || req.user_email}</p>
-                  {req.user_name && req.user_email && (
-                    <p className="text-xs text-ink-soft mt-0.5">{req.user_email}</p>
-                  )}
+                  <p className="font-bold text-ink">{usersById[req.user]?.name || usersById[req.user]?.username}</p>
+                  <p className="text-xs text-ink-soft mt-0.5">{usersById[req.user]?.email}</p>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <form action={approveJoinRequest}>
@@ -310,13 +322,11 @@ export default async function ClubPage({
                     color:     'var(--ink)',
                   }}
                 >
-                  {getInitials(m.user_name || m.user_email)}
+                  {getInitials(usersById[m.user]?.name || usersById[m.user]?.username || '?')}
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-ink">{m.user_name || m.user_email}</p>
-                  {m.user_name && m.user_email && (
-                    <p className="text-xs text-ink-soft mt-0.5">{m.user_email}</p>
-                  )}
+                  <p className="font-bold text-sm text-ink">{usersById[m.user]?.name || usersById[m.user]?.username}</p>
+                  <p className="text-xs text-ink-soft mt-0.5">{usersById[m.user]?.email}</p>
                 </div>
               </div>
               {m.role === 'captain'

@@ -1,6 +1,9 @@
 {
   "applied": [
     "001_initial_schema.ts",
-    "002_add_join_requests.ts"
+    "002_add_join_requests.ts",
+    "003_user_identity_cleanup.ts",
+    "004_user_relation_fields.ts",
+    "004_club_unique_name.ts"
   ]
 }

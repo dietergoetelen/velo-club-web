@@ -25,18 +25,21 @@ export async function createClub(
   const pb   = getPBWithToken(token);
   const slug = slugify(name);
 
+  const existing = await pb.collection('clubs')
+    .getFirstListItem(`slug = "${slug}"`)
+    .catch(() => null);
+  if (existing) return `A club named "${name}" already exists.`;
+
   try {
     const club = await pb.collection('clubs').create({ name, description, slug });
     await pb.collection('club_members').create({
-      club:       club.id,
-      user:       user.id,
-      user_name:  user.name,
-      user_email: user.email,
-      role:       'captain',
-      points:     0,
+      club:   club.id,
+      user:   user.id,
+      role:   'captain',
+      points: 0,
     });
   } catch {
-    return 'Failed to create club. The name may already be taken.';
+    return 'Failed to create club. Please try again.';
   }
 
   redirect(`/clubs/${slug}`);
@@ -67,11 +70,9 @@ export async function requestToJoin(
 
   try {
     await pb.collection('join_requests').create({
-      club:       clubId,
-      user:       user.id,
-      user_name:  user.name,
-      user_email: user.email,
-      status:     'pending',
+      club:   clubId,
+      user:   user.id,
+      status: 'pending',
     });
   } catch (err) {
     console.error('[requestToJoin]', err);
@@ -133,12 +134,10 @@ export async function approveJoinRequest(form: FormData): Promise<void> {
   if (!req) return;
 
   await pb.collection('club_members').create({
-    club:       clubId,
-    user:       req['user'],
-    user_name:  req['user_name'],
-    user_email: req['user_email'],
-    role:       'member',
-    points:     0,
+    club:   clubId,
+    user:   req['user'],
+    role:   'member',
+    points: 0,
   });
   await pb.collection('join_requests').update(requestId, { status: 'approved' });
 
