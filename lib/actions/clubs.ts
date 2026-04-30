@@ -164,6 +164,30 @@ export async function approveJoinRequest(form: FormData): Promise<void> {
   revalidatePath(`/clubs/${slug}`);
 }
 
+export async function promoteToCaptain(form: FormData): Promise<void> {
+  const memberId = form.get('memberId') as string;
+  const clubId   = form.get('clubId')   as string;
+  const slug     = form.get('slug')     as string;
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const captain = await pb.collection('club_members')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!captain) return;
+
+  const target = await pb.collection('club_members').getOne(memberId).catch(() => null);
+  if (!target || target['club'] !== clubId || target['role'] === 'captain') return;
+
+  await pb.collection('club_members').update(memberId, { role: 'captain' }).catch(() => null);
+
+  revalidatePath(`/clubs/${slug}`);
+}
+
 export async function rejectJoinRequest(form: FormData): Promise<void> {
   const requestId = form.get('requestId') as string;
   const clubId    = form.get('clubId')    as string;

@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
-import { approveJoinRequest, rejectJoinRequest } from '@/lib/actions/clubs';
+import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
 import type { Club, ClubMember, JoinRequest, Route } from '@/lib/types';
 
@@ -341,10 +341,22 @@ export default async function ClubPage({
                   <p className="text-xs text-ink-soft mt-0.5">{usersById[m.user]?.email}</p>
                 </div>
               </div>
-              {m.role === 'captain'
-                ? <span className="badge-brand">captain</span>
-                : <span className="badge-neutral">member</span>
-              }
+              <div className="flex items-center gap-3 shrink-0">
+                {m.role === 'captain'
+                  ? <span className="badge-brand">captain</span>
+                  : <span className="badge-neutral">member</span>
+                }
+                {isCaptain && m.role !== 'captain' && m.user !== user.id && (
+                  <form action={promoteToCaptain}>
+                    <input type="hidden" name="memberId" value={m.id} />
+                    <input type="hidden" name="clubId"   value={club.id} />
+                    <input type="hidden" name="slug"     value={slug} />
+                    <button type="submit" className="btn-secondary text-xs px-3 py-1.5">
+                      Make captain
+                    </button>
+                  </form>
+                )}
+              </div>
             </div>
           ))}
         </div>
