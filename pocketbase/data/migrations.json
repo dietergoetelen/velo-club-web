@@ -10,6 +10,7 @@
     "007_club_schedules_enabled.ts",
     "008_club_schedules.ts",
     "009_route_schedule_fk.ts",
-    "010_day_of_week_optional.ts"
+    "010_day_of_week_optional.ts",
+    "011_club_start_location.ts"
   ]
 }

@@ -82,13 +82,15 @@ export function RidePlanner({
   slug,
   clubName,
   schedules,
+  clubStart,
 }: {
   clubId:    string;
   slug:      string;
   clubName:  string;
   schedules: ClubSchedule[];
+  clubStart: StartPos | null;
 }) {
-  const [startPos, setStartPos] = useState<StartPos | null>(null);
+  const [startPos, setStartPos] = useState<StartPos | null>(clubStart);
   const [date, setDate]         = useState(tomorrow);
   const [time, setTime]         = useState('08:00');
   const [distance, setDistance] = useState(30);
@@ -214,14 +216,25 @@ export function RidePlanner({
                 >
                   Click on the map →
                 </div>
-                <button
-                  type="button"
-                  onClick={handleUseMyLocation}
-                  className="btn-secondary text-xs px-3 shrink-0"
-                  title="Use my location"
-                >
-                  📍 My location
-                </button>
+                {clubStart ? (
+                  <button
+                    type="button"
+                    onClick={() => setStartPos(clubStart)}
+                    className="btn-secondary text-xs px-3 shrink-0"
+                    title="Use club's default start"
+                  >
+                    📍 Club start
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleUseMyLocation}
+                    className="btn-secondary text-xs px-3 shrink-0"
+                    title="Use my location"
+                  >
+                    📍 My location
+                  </button>
+                )}
               </div>
             ) : (
               <div

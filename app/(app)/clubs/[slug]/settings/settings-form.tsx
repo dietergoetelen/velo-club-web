@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { updateClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
 import { AvatarUpload } from '@/components/avatar-upload';
+import { StartLocationPicker } from './start-location-picker';
 import type { Club } from '@/lib/types';
 
 function getInitials(name: string) {
@@ -51,6 +52,11 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
           initialUrl={avatarUrl}
           initials={getInitials(club.name)}
           accent="var(--amber)"
+        />
+
+        <StartLocationPicker
+          initialLat={club.start_lat}
+          initialLng={club.start_lng}
         />
 
         <label className="flex items-start gap-3 cursor-pointer">

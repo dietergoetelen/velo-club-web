@@ -108,6 +108,11 @@ export async function updateClub(
   const avatarRemove     = form.get('avatar_remove')    === '1';
   const schedulesEnabled = form.get('schedules_enabled') === '1';
 
+  const startLatRaw = form.get('start_lat') as string | null;
+  const startLngRaw = form.get('start_lng') as string | null;
+  const startLat    = startLatRaw ? parseFloat(startLatRaw) : 0;
+  const startLng    = startLngRaw ? parseFloat(startLngRaw) : 0;
+
   if (!name) return 'Club name is required.';
 
   const token = await getToken();
@@ -125,6 +130,8 @@ export async function updateClub(
     name,
     description,
     schedules_enabled: schedulesEnabled,
+    start_lat:         Number.isFinite(startLat) ? startLat : 0,
+    start_lng:         Number.isFinite(startLng) ? startLng : 0,
   };
   if (avatar && avatar.size > 0) data['avatar'] = avatar;
   else if (avatarRemove)         data['avatar'] = null;

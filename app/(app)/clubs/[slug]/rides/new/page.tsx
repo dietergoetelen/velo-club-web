@@ -37,12 +37,17 @@ export default async function NewRidePage({
       }).catch(() => [])
     : [];
 
+  const clubStart = (club.start_lat !== 0 || club.start_lng !== 0)
+    ? { lat: club.start_lat, lng: club.start_lng }
+    : null;
+
   return (
     <RidePlanner
       clubId={club.id}
       slug={slug}
       clubName={club.name}
       schedules={schedules}
+      clubStart={clubStart}
     />
   );
 }

@@ -13,6 +13,12 @@ export interface Club extends PBRecord {
   slug:              string;
   avatar:            string;  // file name; '' when no avatar
   schedules_enabled: boolean;
+  start_lat:         number;  // 0 when unset
+  start_lng:         number;  // 0 when unset
+}
+
+export function hasClubStart(club: Pick<Club, 'start_lat' | 'start_lng'>): boolean {
+  return club.start_lat !== 0 || club.start_lng !== 0;
 }
 
 export interface ClubSchedule extends PBRecord {

@@ -130,6 +130,27 @@ export default async function RideDetailPage({
             <p className="text-ink font-bold capitalize">{ride.surface}</p>
           </div>
 
+          {/* Garmin / GPX export */}
+          <div>
+            <a
+              href={`/clubs/${slug}/rides/${ride.id}/gpx`}
+              download
+              className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
+              style={{
+                backgroundColor: 'var(--amber)',
+                border:          '2px solid var(--ink)',
+                boxShadow:       '3px 3px 0px var(--ink)',
+                color:           'var(--ink)',
+                textDecoration:  'none',
+              }}
+            >
+              ⬇ Download GPX
+            </a>
+            <p className="text-xs text-ink-soft mt-1.5">
+              Import into Garmin Connect as a course.
+            </p>
+          </div>
+
           {isCaptain && (
             <div className="pt-2">
               <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
