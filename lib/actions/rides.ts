@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getToken, getCurrentUser } from '@/lib/session';
 import { getPBWithToken } from '@/lib/pocketbase';
-import { fetchThreeRoutes, fetchEditedRoute } from '@/lib/graphhopper';
+import { fetchThreeRoutes, fetchSegment } from '@/lib/graphhopper';
 import type { RideRoute } from '@/lib/types';
 
 // ── Generate ──────────────────────────────────────────────────────────────────
@@ -24,27 +24,6 @@ export async function generateRoutes(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[generateRoutes]', msg);
-    return { ok: false, error: msg };
-  }
-}
-
-// ── Recalc edited route ───────────────────────────────────────────────────────
-
-export type RecalcResult =
-  | { ok: true;  distance: number; elevation: number; coordinates: [number, number][] }
-  | { ok: false; error: string };
-
-export async function recalcEditedRoute(
-  start:     { lat: number; lng: number },
-  waypoints: { lat: number; lng: number }[],
-  profile?:  string,
-): Promise<RecalcResult> {
-  try {
-    const r = await fetchEditedRoute(start, waypoints, profile);
-    return { ok: true, ...r };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[recalcEditedRoute]', msg);
     return { ok: false, error: msg };
   }
 }
@@ -100,6 +79,69 @@ export async function saveRide(
   }
 
   redirect(`/clubs/${slug}`);
+}
+
+// ── Single-segment recalc ────────────────────────────────────────────────────
+
+export type SegmentResult =
+  | { ok: true; distance: number; elevation: number; coordinates: [number, number][] }
+  | { ok: false; error: string };
+
+export async function recalcSegment(
+  from:     { lat: number; lng: number },
+  to:       { lat: number; lng: number },
+  profile?: string,
+): Promise<SegmentResult> {
+  try {
+    const r = await fetchSegment(from, to, profile);
+    return { ok: true, ...r };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[recalcSegment]', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+// ── Update ────────────────────────────────────────────────────────────────────
+
+export async function updateRideRoute(
+  _prev: string | null,
+  form:  FormData,
+): Promise<string | null> {
+  const rideId      = form.get('rideId')      as string;
+  const slug        = form.get('slug')        as string;
+  const distanceKm  = parseFloat(form.get('distanceKm') as string);
+  const elevationM  = parseFloat(form.get('elevationM') as string);
+  const coordinates = JSON.parse(form.get('coordinates') as string) as [number, number][];
+
+  if (!coordinates?.length) return 'No route selected.';
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const ride = await pb.collection('routes').getOne(rideId).catch(() => null);
+  if (!ride) return 'Ride not found.';
+
+  const captain = await pb.collection('club_members')
+    .getFirstListItem(`club = "${ride['club']}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!captain) return 'Only the captain can edit the route.';
+
+  try {
+    await pb.collection('routes').update(rideId, {
+      distance_km: distanceKm,
+      elevation_m: elevationM,
+      coordinates,
+    });
+  } catch (err) {
+    console.error('[updateRideRoute]', err);
+    return 'Failed to save changes. Please try again.';
+  }
+
+  redirect(`/clubs/${slug}/rides/${rideId}`);
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────

@@ -152,7 +152,20 @@ export default async function RideDetailPage({
           </div>
 
           {isCaptain && (
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              <Link
+                href={`/clubs/${slug}/rides/${ride.id}/edit`}
+                className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: 'white',
+                  border:          '2px solid var(--ink)',
+                  boxShadow:       '3px 3px 0px var(--ink)',
+                  color:           'var(--ink)',
+                  textDecoration:  'none',
+                }}
+              >
+                ✎ Edit route
+              </Link>
               <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
             </div>
           )}

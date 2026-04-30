@@ -250,20 +250,17 @@ async function fetchViaRoute(
   return data.paths[0];
 }
 
-export async function fetchEditedRoute(
-  start:     { lat: number; lng: number },
-  waypoints: { lat: number; lng: number }[],
-  profile:   string = GH_PROFILE,
+/** Single-segment routing A → B. Used for surgical edits that shouldn't
+ *  perturb the rest of a route. */
+export async function fetchSegment(
+  from:    { lat: number; lng: number },
+  to:      { lat: number; lng: number },
+  profile: string = GH_PROFILE,
 ): Promise<{ distance: number; elevation: number; coordinates: [number, number][] }> {
-  const points: [number, number][] = [
-    [start.lat, start.lng],
-    ...waypoints.map(w => [w.lat, w.lng] as [number, number]),
-    [start.lat, start.lng],
-  ];
-  const path = await fetchViaRoute(points, profile);
+  const path = await fetchViaRoute([[from.lat, from.lng], [to.lat, to.lng]], profile);
   return {
-    distance:    Math.round(path.distance / 100) / 10,
-    elevation:   Math.round(path.ascend),
+    distance:    path.distance / 1000,                  // km
+    elevation:   path.ascend,                            // m
     coordinates: path.points.coordinates.map(([lo, la]) => [la, lo] as [number, number]),
   };
 }

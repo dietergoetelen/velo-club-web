@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -43,20 +43,34 @@ function ClickHandler({
 function BoundsFitter({
   routes,
   startPos,
+  editing,
+  editPolyline,
 }: {
-  routes:   RideRoute[];
-  startPos: StartPos | null;
+  routes:        RideRoute[];
+  startPos:      StartPos | null;
+  editing:       boolean;
+  editPolyline?: [number, number][];
 }) {
   const map = useMap();
+  const fitOnceForEditing = useRef(false);
 
   useEffect(() => {
+    // First time we enter edit mode, fit to the polyline we're editing.
+    // Don't re-fit on subsequent recalcs — the user may have panned.
+    if (editing && !fitOnceForEditing.current && editPolyline?.length) {
+      map.fitBounds(editPolyline as [number, number][], { padding: [48, 48] });
+      fitOnceForEditing.current = true;
+      return;
+    }
+    if (editing) return;  // skip the planner's logic while editing
+
     if (routes.length > 0) {
       const all = routes.flatMap(r => r.coordinates) as [number, number][];
       if (all.length) map.fitBounds(all, { padding: [48, 48] });
     } else if (startPos) {
       map.setView([startPos.lat, startPos.lng], 13);
     }
-  }, [routes, startPos, map]);
+  }, [routes, startPos, map, editing, editPolyline]);
 
   return null;
 }
@@ -132,7 +146,12 @@ export default function RouteMap({
         onMapClick={onMapClick}
         onAddWaypoint={onAddWaypoint}
       />
-      <BoundsFitter routes={routes} startPos={startPos} />
+      <BoundsFitter
+        routes={routes}
+        startPos={startPos}
+        editing={editing}
+        editPolyline={editPolyline}
+      />
 
       {/* ── Routes ── (hidden in edit mode; the editPolyline takes over) */}
       {!editing && routes.map(route => {
