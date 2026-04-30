@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useActionState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { generateRoutes, saveRide } from '@/lib/actions/rides';
 import type { RideRoute } from '@/lib/types';
 
@@ -122,6 +123,20 @@ export function RidePlanner({
     });
   };
 
+  const handleRegenerate = () => {
+    if (!startPos) return;
+    setGenError(null);
+    startTransition(async () => {
+      const result = await generateRoutes(startPos.lat, startPos.lng, distance);
+      if (result.ok) {
+        setRoutes(result.routes);
+        setSelectedRoute(result.routes[0]);
+      } else {
+        setGenError(result.error);
+      }
+    });
+  };
+
   const handleClearStart = () => {
     setStartPos(null);
     setRoutes([]);
@@ -146,7 +161,12 @@ export function RidePlanner({
           className="px-7 pt-7 pb-5 shrink-0"
           style={{ borderBottom: '2px solid var(--line)' }}
         >
-          <p className="eyebrow mb-1">{clubName}</p>
+          <Link
+            href={`/clubs/${slug}`}
+            className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+          >
+            ← {clubName}
+          </Link>
           <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
             Plan a ride
           </h1>
@@ -213,6 +233,7 @@ export function RidePlanner({
                 value={date}
                 min={new Date().toISOString().split('T')[0]}
                 onChange={e => setDate(e.target.value)}
+                disabled={isPending}
                 className="field-input"
               />
             </div>
@@ -222,6 +243,7 @@ export function RidePlanner({
                 type="time"
                 value={time}
                 onChange={e => setTime(e.target.value)}
+                disabled={isPending}
                 className="field-input"
               />
             </div>
@@ -245,8 +267,9 @@ export function RidePlanner({
               step={5}
               value={distance}
               onChange={e => setDistance(Number(e.target.value))}
+              disabled={isPending}
               className="w-full mt-1"
-              style={{ accentColor: 'var(--accent)' }}
+              style={{ accentColor: 'var(--accent)', opacity: isPending ? 0.5 : 1 }}
             />
             <div className="flex justify-between text-xs text-ink-soft mt-0.5 font-medium">
               <span>10 km</span><span>120 km</span>
@@ -295,11 +318,12 @@ export function RidePlanner({
 
               <button
                 type="button"
-                onClick={handleGenerate}
+                onClick={handleRegenerate}
                 disabled={isPending}
                 className="btn-secondary w-full text-sm"
+                style={{ opacity: isPending ? 0.5 : 1 }}
               >
-                ↺ Try different routes
+                {isPending ? '↺ Finding better routes…' : '↺ Try different routes'}
               </button>
             </>
           )}
