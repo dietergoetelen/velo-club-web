@@ -24,11 +24,16 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
   if (!membership) redirect(`/clubs/${slug}`);
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-ink tracking-tight">Club settings</h1>
-        <p className="text-sm text-ink-muted mt-1">{club.name}</p>
+    <div className="max-w-lg mx-auto">
+
+      <div className="mb-8">
+        <p className="eyebrow mb-2">Settings</p>
+        <h1 className="font-heading font-black text-4xl text-ink tracking-tight">
+          {club.name}
+        </h1>
+        <p className="text-ink-soft mt-1">Only you (the captain) can edit these.</p>
       </div>
+
       <SettingsForm club={club} />
     </div>
   );

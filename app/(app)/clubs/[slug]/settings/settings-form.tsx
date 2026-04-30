@@ -10,7 +10,7 @@ export function SettingsForm({ club }: { club: Club }) {
 
   return (
     <div className="card p-8">
-      <form action={action} className="space-y-4">
+      <form action={action} className="space-y-6">
         <input type="hidden" name="clubId" value={club.id} />
         <input type="hidden" name="slug"   value={club.slug} />
 
@@ -28,7 +28,7 @@ export function SettingsForm({ club }: { club: Club }) {
         <div>
           <label className="field-label">
             Description
-            <span className="text-ink-faint font-normal ml-1">(optional)</span>
+            <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">(optional)</span>
           </label>
           <textarea
             name="description" rows={3}
@@ -37,7 +37,7 @@ export function SettingsForm({ club }: { club: Club }) {
           />
         </div>
 
-        <FormButton label="Save changes" loadingLabel="Saving…" />
+        <FormButton label="Save changes →" loadingLabel="Saving…" />
       </form>
     </div>
   );

@@ -1,88 +1,110 @@
 @import "tailwindcss";
 
 /* ─── Primitive palette ──────────────────────────────────────────────────────
-   Edit these to retheme the entire app.
+   Playful Geometric — Memphis-inspired design system.
+   Change the :root values to retheme the entire app.
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Brand — vivid cycling green */
-  --brand:        oklch(52% 0.22 162);
-  --brand-subtle: oklch(96% 0.06 162);
-  --brand-mid:    oklch(43% 0.22 162);
+  --paper:    #FFFDF5;   /* warm off-white */
+  --ink:      #1E293B;   /* slate-800 */
+  --muted:    #F1F5F9;   /* slate-100 */
+  --ink-soft: #64748B;   /* slate-500 */
+  --accent:   #8B5CF6;   /* vivid violet — primary */
+  --pink:     #F472B6;   /* hot pink — playful */
+  --amber:    #FBBF24;   /* amber — optimism */
+  --mint:     #34D399;   /* emerald — freshness */
+  --line:     #E2E8F0;   /* slate-200 — dividers */
 
-  /* Ink scale — warm near-black */
-  --ink:        oklch(12%   0.008 80);
-  --ink-muted:  oklch(46%   0.008 80);
-  --ink-faint:  oklch(66%   0.006 80);
-
-  /* Surface scale */
-  --canvas:  oklch(97%   0.003 85);
-  --surface: #ffffff;
-  --sunken:  oklch(95.5% 0.004 85);
-
-  /* Borders */
-  --line:     oklch(90%   0.004 85);
-  --line-mid: oklch(81%   0.005 85);
-
-  /* Shell — near-black nav chrome */
-  --shell:      oklch(9%  0.006 80);
-  --shell-line: oklch(20% 0.006 80);
-
-  /* Feedback */
-  --danger:        oklch(54% 0.22 25);
-  --danger-subtle: oklch(97% 0.05 25);
+  /* Hard shadows — no blur, solid offset */
+  --shadow-pop:        4px 4px 0px 0px var(--ink);
+  --shadow-pop-hover:  6px 6px 0px 0px var(--ink);
+  --shadow-pop-active: 2px 2px 0px 0px var(--ink);
+  --shadow-card:       8px 8px 0px 0px var(--line);
+  --shadow-card-hover: 8px 8px 0px 0px var(--pink);
+  --shadow-badge:      2px 2px 0px 0px var(--ink);
 }
 
 /* ─── Tailwind token map ─────────────────────────────────────────────────── */
 @theme inline {
-  --font-sans: var(--font-geist);
+  --font-sans:    var(--font-jakarta);
+  --font-heading: var(--font-outfit);
 
-  --color-brand:         var(--brand);
-  --color-brand-subtle:  var(--brand-subtle);
-  --color-brand-mid:     var(--brand-mid);
-
-  --color-ink:           var(--ink);
-  --color-ink-muted:     var(--ink-muted);
-  --color-ink-faint:     var(--ink-faint);
-
-  --color-canvas:        var(--canvas);
-  --color-surface:       var(--surface);
-  --color-sunken:        var(--sunken);
-
-  --color-line:          var(--line);
-  --color-line-mid:      var(--line-mid);
-
-  --color-shell:         var(--shell);
-  --color-shell-line:    var(--shell-line);
-
-  --color-danger:        var(--danger);
-  --color-danger-subtle: var(--danger-subtle);
+  --color-paper:    var(--paper);
+  --color-ink:      var(--ink);
+  --color-muted:    var(--muted);
+  --color-ink-soft: var(--ink-soft);
+  --color-accent:   var(--accent);
+  --color-pink:     var(--pink);
+  --color-amber:    var(--amber);
+  --color-mint:     var(--mint);
+  --color-line:     var(--line);
+  /* Legacy aliases so old utility refs still compile */
+  --color-danger:        var(--pink);
+  --color-danger-subtle: color-mix(in srgb, var(--pink), white 85%);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
-  background-color: var(--canvas);
+  background-color: var(--paper);
+  /* Subtle dot grid — the Memphis "paper texture" */
+  background-image: radial-gradient(circle, #D1D5DB 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── Components ─────────────────────────────────────────────────────────── */
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-12px) rotate(4deg); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(-5deg); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25%       { transform: rotate(5deg) scale(1.05); }
+  75%       { transform: rotate(-5deg) scale(1.05); }
+}
+
+@keyframes pop-in {
+  0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  70%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1)    rotate(0deg); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Component library ─────────────────────────────────────────────────── */
 @layer components {
 
   /* ── Cards ── */
   .card {
-    @apply bg-surface rounded-2xl;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05);
+    @apply bg-white rounded-xl;
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow-card);
   }
 
-  /* Card that lifts on hover — for clickable items */
+  /* Wiggle-on-hover sticker card — for clickable items */
   .card-link {
-    @apply bg-surface rounded-2xl block transition-all duration-200;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05);
+    @apply bg-white rounded-xl block;
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow-card);
+    transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
     &:hover {
-      box-shadow: 0 8px 24px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05);
-      transform: translateY(-2px);
+      transform: rotate(-1.5deg) scale(1.025);
+      box-shadow: var(--shadow-card-hover);
     }
-    &:active { transform: translateY(0); }
+    &:active { transform: scale(0.98); }
   }
 
   /* ── Buttons: shared base ── */
@@ -90,80 +112,112 @@ body {
   .btn-primary,
   .btn-secondary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl
-           px-4 py-2.5 text-sm font-semibold leading-none select-none
-           transition-all duration-150 cursor-pointer
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand
-           disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full
+           px-5 py-2.5 text-sm font-bold leading-none select-none cursor-pointer;
+    border: 2px solid var(--ink);
+    transition: all 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
+  /* Primary — The Candy Button */
   .btn-primary {
     @apply text-white;
-    background-color: var(--brand);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15), 0 0 0 1px color-mix(in oklch, var(--brand), black 20%);
-    &:hover  {
-      background-color: var(--brand-mid);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.20), 0 0 0 1px color-mix(in oklch, var(--brand), black 25%);
+    background-color: var(--accent);
+    box-shadow: var(--shadow-pop);
+    &:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: var(--shadow-pop-hover);
     }
-    &:active { transform: scale(0.98); }
+    &:active {
+      transform: translate(2px, 2px);
+      box-shadow: var(--shadow-pop-active);
+    }
+    &:disabled { opacity: 0.55; pointer-events: none; }
   }
 
+  /* Secondary — transparent, fills amber on hover */
   .btn-secondary {
-    @apply bg-surface text-ink;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.10);
-    &:hover  { background-color: var(--sunken); }
-    &:active { transform: scale(0.98); }
+    background-color: transparent;
+    color: var(--ink);
+    box-shadow: none;
+    &:hover { background-color: var(--amber); }
+    &:active { opacity: 0.8; }
+    &:disabled { opacity: 0.55; pointer-events: none; }
   }
 
+  /* Ghost — no border */
   .btn-ghost {
-    @apply text-ink-muted;
-    &:hover { background-color: var(--sunken); color: var(--ink); }
+    border-color: transparent;
+    color: var(--ink-soft);
+    box-shadow: none;
+    &:hover { background-color: var(--muted); color: var(--ink); }
+  }
+
+  /* Nav ghost — white-on-violet variant, used in the app header */
+  .btn-nav {
+    @apply rounded-full px-4 py-1.5 text-xs font-bold cursor-pointer transition-all duration-200;
+    color: rgba(255,255,255,0.55);
+    border: 2px solid rgba(255,255,255,0.22);
+    background: transparent;
+    &:hover {
+      color: white;
+      border-color: rgba(255,255,255,0.65);
+      background-color: rgba(255,255,255,0.12);
+    }
   }
 
   /* ── Form elements ── */
   .field-label {
-    @apply block text-sm font-medium text-ink mb-1.5;
+    @apply block text-xs font-black uppercase tracking-[0.12em] mb-2;
+    color: var(--ink);
   }
 
   .field-input {
-    @apply w-full rounded-xl bg-surface
-           px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint
-           transition-all duration-150
-           focus:outline-none;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.12);
+    @apply w-full rounded-lg bg-white px-4 py-3 text-sm
+           placeholder:text-ink-soft transition-all duration-200;
+    color: var(--ink);
+    border: 2px solid var(--line);
+    box-shadow: 4px 4px 0px transparent;
+    outline: none;
     &:focus {
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 0 0 2px var(--brand);
+      border-color: var(--accent);
+      box-shadow: 4px 4px 0px var(--accent);
     }
   }
 
   .field-error {
-    @apply rounded-xl px-4 py-3 text-sm font-medium;
-    color: var(--danger);
-    background-color: var(--danger-subtle);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--danger), white 60%);
+    @apply rounded-lg px-4 py-3 text-sm font-bold;
+    border: 2px solid var(--pink);
+    background-color: color-mix(in srgb, var(--pink), white 85%);
+    color: color-mix(in srgb, var(--pink), black 25%);
+    box-shadow: 4px 4px 0px var(--pink);
   }
 
   /* ── Badges ── */
   .badge,
   .badge-brand,
   .badge-neutral {
-    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide;
+    @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-black;
+    border: 2px solid var(--ink);
   }
 
+  /* brand = captain = violet */
   .badge-brand {
-    color: var(--brand-mid);
-    background-color: var(--brand-subtle);
-    box-shadow: 0 0 0 1px color-mix(in oklch, var(--brand), white 55%);
+    background-color: var(--accent);
+    color: white;
+    box-shadow: var(--shadow-badge);
   }
 
+  /* neutral = member / pending */
   .badge-neutral {
-    @apply bg-sunken text-ink-muted;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.07);
+    background-color: var(--muted);
+    color: var(--ink-soft);
+    border-color: var(--line);
+    box-shadow: none;
   }
 
   /* ── Eyebrow / section label ── */
   .eyebrow {
-    @apply text-xs font-bold uppercase tracking-[0.1em] text-ink-faint;
+    @apply text-xs font-black uppercase tracking-[0.14em] text-ink-soft;
   }
 
 }

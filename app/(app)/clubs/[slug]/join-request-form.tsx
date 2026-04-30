@@ -10,7 +10,7 @@ export function JoinRequestForm({ clubId, slug }: { clubId: string; slug: string
     <form action={action} className="shrink-0">
       <input type="hidden" name="clubId" value={clubId} />
       <input type="hidden" name="slug"   value={slug} />
-      {error && <p className="text-xs text-danger mb-2">{error}</p>}
+      {error && <p className="text-xs font-bold text-pink mb-2">{error}</p>}
       <button type="submit" disabled={pending} className="btn-primary">
         {pending ? 'Sending…' : 'Request to join'}
       </button>
