@@ -11,6 +11,7 @@ export interface Club extends PBRecord {
   name:        string;
   description: string;
   slug:        string;
+  avatar:      string;  // file name; '' when no avatar
 }
 
 export interface ClubMember extends PBRecord {

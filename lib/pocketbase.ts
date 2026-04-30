@@ -21,3 +21,13 @@ export async function getAdminPocketBase(): Promise<PocketBase> {
   );
   return pb;
 }
+
+export function fileUrl(
+  collection: string,
+  recordId:   string,
+  fileName:   string,
+  thumb?:     string,
+): string {
+  const base = `${PB_URL}/api/files/${collection}/${recordId}/${fileName}`;
+  return thumb ? `${base}?thumb=${thumb}` : base;
+}

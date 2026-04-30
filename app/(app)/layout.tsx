@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser } from '@/lib/session';
+import { fileUrl } from '@/lib/pocketbase';
 import { logout } from '@/lib/actions/auth';
 
 function getInitials(nameOrEmail: string) {
@@ -34,21 +35,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
+            <Link href="/profile" className="flex items-center gap-3 group" aria-label="Edit your profile">
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black text-ink shrink-0"
+                className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden text-xs font-black text-ink shrink-0"
                 style={{
-                  backgroundColor: 'var(--amber)',
+                  backgroundColor: user.avatar ? 'transparent' : 'var(--amber)',
                   border: '2px solid rgba(255,255,255,0.8)',
                   boxShadow: '2px 2px 0px rgba(0,0,0,0.25)',
                 }}
               >
-                {getInitials(user.name || user.email)}
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fileUrl('users', user.id, user.avatar, '100x100')}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  getInitials(user.name || user.email)
+                )}
               </div>
-              <span className="hidden sm:block text-sm font-bold text-white/70 font-heading">
+              <span className="hidden sm:block text-sm font-bold text-white/70 group-hover:text-white font-heading transition-colors">
                 {displayName}
               </span>
-            </div>
+            </Link>
 
             <form action={logout}>
               <button type="submit" className="btn-nav">Sign out</button>

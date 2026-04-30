@@ -25,9 +25,10 @@ export async function clearToken() {
 }
 
 export interface SessionUser {
-  id:    string;
-  email: string;
-  name:  string;
+  id:     string;
+  email:  string;
+  name:   string;
+  avatar: string;  // file name; '' when none
 }
 
 export async function getCurrentUser(): Promise<SessionUser | null> {
@@ -44,7 +45,12 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     // Use the user's own token — no admin credentials needed
     const pb   = getPBWithToken(token);
     const user = await pb.collection('users').getOne(userId);
-    return { id: user.id, email: user.email as string, name: (user['name'] as string) ?? '' };
+    return {
+      id:     user.id,
+      email:  user.email as string,
+      name:   (user['name']   as string) ?? '',
+      avatar: (user['avatar'] as string) ?? '',
+    };
   } catch {
     return null;
   }

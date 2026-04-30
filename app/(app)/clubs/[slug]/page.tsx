@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
+import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
 import type { Club, ClubMember, JoinRequest, Route } from '@/lib/types';
@@ -98,15 +99,26 @@ export default async function ClubPage({
       {/* ── Club header ────────────────────────────────────────────────── */}
       <div className="relative">
         <div
-          aria-hidden="true"
-          className="absolute -top-4 right-0 w-40 h-40 rounded-full hidden sm:block"
+          className="absolute -top-4 right-0 w-40 h-40 rounded-full hidden sm:flex items-center justify-center overflow-hidden font-heading font-black text-5xl text-ink"
           style={{
-            backgroundColor: accent,
+            backgroundColor: club.avatar ? 'transparent' : accent,
             border:    '2px solid var(--ink)',
             boxShadow: '5px 5px 0px var(--ink)',
             animation: 'float 8s ease-in-out infinite',
           }}
-        />
+          aria-hidden={club.avatar ? undefined : true}
+        >
+          {club.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={fileUrl('clubs', club.id, club.avatar, '400x400')}
+              alt={`${club.name} avatar`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            getInitials(club.name)
+          )}
+        </div>
         <div
           aria-hidden="true"
           className="absolute top-16 right-36 w-10 h-10 rounded-xl hidden sm:block"

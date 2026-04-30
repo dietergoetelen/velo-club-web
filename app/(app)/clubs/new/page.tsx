@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { createClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
+import { AvatarUpload } from '@/components/avatar-upload';
 
 export default function NewClubPage() {
   const [error, action] = useActionState(createClub, null);
@@ -70,6 +71,8 @@ export default function NewClubPage() {
               className="field-input resize-none"
             />
           </div>
+
+          <AvatarUpload label="Club photo" accent="var(--mint)" />
 
           <FormButton label="Create club →" loadingLabel="Creating…" />
         </form>

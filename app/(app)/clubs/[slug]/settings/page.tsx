@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
+import { fileUrl } from '@/lib/pocketbase';
 import { SettingsForm } from './settings-form';
 import type { Club, ClubMember } from '@/lib/types';
 
@@ -34,7 +35,10 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
         <p className="text-ink-soft mt-1">Only you (the captain) can edit these.</p>
       </div>
 
-      <SettingsForm club={club} />
+      <SettingsForm
+        club={club}
+        avatarUrl={club.avatar ? fileUrl('clubs', club.id, club.avatar, '400x400') : undefined}
+      />
     </div>
   );
 }

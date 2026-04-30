@@ -15,6 +15,7 @@ export async function createClub(
 ): Promise<string | null> {
   const name        = (form.get('name')        as string).trim();
   const description = (form.get('description') as string).trim();
+  const avatar      = form.get('avatar') as File | null;
 
   if (!name) return 'Club name is required.';
 
@@ -30,8 +31,11 @@ export async function createClub(
     .catch(() => null);
   if (existing) return `A club named "${name}" already exists.`;
 
+  const data: Record<string, unknown> = { name, description, slug };
+  if (avatar && avatar.size > 0) data['avatar'] = avatar;
+
   try {
-    const club = await pb.collection('clubs').create({ name, description, slug });
+    const club = await pb.collection('clubs').create(data);
     await pb.collection('club_members').create({
       club:   club.id,
       user:   user.id,
@@ -86,10 +90,12 @@ export async function updateClub(
   _prev: string | null,
   form: FormData,
 ): Promise<string | null> {
-  const clubId      = form.get('clubId')      as string;
-  const slug        = form.get('slug')        as string;
-  const name        = (form.get('name')        as string).trim();
-  const description = (form.get('description') as string).trim();
+  const clubId       = form.get('clubId')       as string;
+  const slug         = form.get('slug')         as string;
+  const name         = (form.get('name')        as string).trim();
+  const description  = (form.get('description') as string).trim();
+  const avatar       = form.get('avatar')       as File | null;
+  const avatarRemove = form.get('avatar_remove') === '1';
 
   if (!name) return 'Club name is required.';
 
@@ -104,8 +110,12 @@ export async function updateClub(
     .catch(() => null);
   if (!membership) return 'Only the captain can edit club settings.';
 
+  const data: Record<string, unknown> = { name, description };
+  if (avatar && avatar.size > 0) data['avatar'] = avatar;
+  else if (avatarRemove)         data['avatar'] = null;
+
   try {
-    await pb.collection('clubs').update(clubId, { name, description });
+    await pb.collection('clubs').update(clubId, data);
   } catch {
     return 'Failed to save changes.';
   }

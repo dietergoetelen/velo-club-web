@@ -3,9 +3,18 @@
 import { useActionState } from 'react';
 import { updateClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
+import { AvatarUpload } from '@/components/avatar-upload';
 import type { Club } from '@/lib/types';
 
-export function SettingsForm({ club }: { club: Club }) {
+function getInitials(name: string) {
+  return (name || '?')
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: string }) {
   const [error, action] = useActionState(updateClub, null);
 
   return (
@@ -36,6 +45,13 @@ export function SettingsForm({ club }: { club: Club }) {
             className="field-input resize-none"
           />
         </div>
+
+        <AvatarUpload
+          label="Club photo"
+          initialUrl={avatarUrl}
+          initials={getInitials(club.name)}
+          accent="var(--amber)"
+        />
 
         <FormButton label="Save changes →" loadingLabel="Saving…" />
       </form>
