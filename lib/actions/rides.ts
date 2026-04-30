@@ -16,9 +16,10 @@ export async function generateRoutes(
   lat:        number,
   lng:        number,
   distanceKm: number,
+  profile?:   string,
 ): Promise<GenerateResult> {
   try {
-    const routes = await fetchThreeRoutes(lat, lng, distanceKm);
+    const routes = await fetchThreeRoutes(lat, lng, distanceKm, profile);
     return { ok: true, routes };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

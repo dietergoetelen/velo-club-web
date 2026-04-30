@@ -74,4 +74,7 @@ export interface RideRoute {
   distance:    number;              // km, 1 decimal
   elevation:   number;              // m, integer
   coordinates: [number, number][];  // [lat, lng] — Leaflet order
+  // Quality debug info
+  score:       number;              // 0..100; 100 = no detected pinch
+  lollipopM:   number;              // raw pinch path-distance (m); 0 = clean
 }

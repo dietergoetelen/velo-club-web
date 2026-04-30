@@ -67,9 +67,28 @@ function RouteCard({
           </span>
         )}
       </div>
-      <div className="flex gap-4 text-sm">
+      <div className="flex gap-4 text-sm items-center">
         <span className="font-bold text-ink">{route.distance} km</span>
         <span className="text-ink-soft">{route.elevation} m ↑</span>
+        <span
+          className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full tabular-nums"
+          title={route.lollipopM === 0
+            ? 'No pinch detected'
+            : `Route folds within 25m of itself after ${route.lollipopM}m of riding`}
+          style={{
+            backgroundColor:
+              route.score >= 90 ? 'color-mix(in srgb, var(--mint), white 75%)'
+            : route.score >= 70 ? 'color-mix(in srgb, var(--amber), white 75%)'
+                                : 'color-mix(in srgb, var(--pink), white 75%)',
+            border:
+              route.score >= 90 ? '1px solid var(--mint)'
+            : route.score >= 70 ? '1px solid var(--amber)'
+                                : '1px solid var(--pink)',
+            color: 'var(--ink)',
+          }}
+        >
+          {route.score} {route.lollipopM > 0 ? `· ${route.lollipopM}m pinch` : ''}
+        </span>
       </div>
     </button>
   );
@@ -117,6 +136,7 @@ export function RidePlanner({
   const [selectedRoute, setSelectedRoute] = useState<RideRoute | null>(null);
   const [step, setStep]                   = useState<Step>('setup');
   const [genError, setGenError]           = useState<string | null>(null);
+  const [profile, setProfile]             = useState<string>('bike');
 
   const [isPending, startTransition] = useTransition();
   const [saveError, saveAction]      = useActionState(saveRide, null);
@@ -134,7 +154,7 @@ export function RidePlanner({
     setStep('generating');
     setGenError(null);
     startTransition(async () => {
-      const result = await generateRoutes(startPos.lat, startPos.lng, distance);
+      const result = await generateRoutes(startPos.lat, startPos.lng, distance, profile);
       if (result.ok) {
         setRoutes(result.routes);
         setSelectedRoute(result.routes[0]);
@@ -150,7 +170,7 @@ export function RidePlanner({
     if (!startPos) return;
     setGenError(null);
     startTransition(async () => {
-      const result = await generateRoutes(startPos.lat, startPos.lng, distance);
+      const result = await generateRoutes(startPos.lat, startPos.lng, distance, profile);
       if (result.ok) {
         setRoutes(result.routes);
         setSelectedRoute(result.routes[0]);
@@ -338,6 +358,24 @@ export function RidePlanner({
             <div className="flex justify-between text-xs text-ink-soft mt-0.5 font-medium">
               <span>10 km</span><span>120 km</span>
             </div>
+          </div>
+
+          {/* ── Routing engine (A/B test) ── */}
+          <div>
+            <label className="field-label">Routing engine</label>
+            <select
+              value={profile}
+              onChange={e => setProfile(e.target.value)}
+              disabled={isPending}
+              className="field-input"
+            >
+              <option value="bike">bike — default</option>
+              <option value="bike_road">bike_road — prefers paved</option>
+              <option value="bike_gravel">bike_gravel — prefers gravel</option>
+              <option value="road_bike">road_bike — custom + u_turn 60s</option>
+              <option value="racingbike">racingbike — bundled racing</option>
+              <option value="racingbike_avoid_turns">racingbike + avoid_turns</option>
+            </select>
           </div>
 
           {/* ── Generate error ── */}
