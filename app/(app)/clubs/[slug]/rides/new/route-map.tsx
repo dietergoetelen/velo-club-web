@@ -6,19 +6,36 @@ import {
   TileLayer,
   Polyline,
   CircleMarker,
+  Marker,
   useMap,
   useMapEvents,
 } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RideRoute } from '@/lib/types';
 
 type StartPos = { lat: number; lng: number };
+type Waypoint = { id: string; lat: number; lng: number };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function ClickHandler({ onMapClick }: { onMapClick: (pos: StartPos) => void }) {
+function ClickHandler({
+  editing,
+  onMapClick,
+  onAddWaypoint,
+}: {
+  editing:        boolean;
+  onMapClick:     (pos: StartPos) => void;
+  onAddWaypoint?: (lat: number, lng: number) => void;
+}) {
   useMapEvents({
-    click(e) { onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng }); },
+    click(e) {
+      if (editing) {
+        onAddWaypoint?.(e.latlng.lat, e.latlng.lng);
+      } else {
+        onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+    },
   });
   return null;
 }
@@ -46,12 +63,38 @@ function BoundsFitter({
 
 // ── Main map ──────────────────────────────────────────────────────────────────
 
+// Numbered amber pin for waypoints. Built once per index because Leaflet's
+// divIcon needs distinct DOM strings per number.
+function waypointIcon(n: number): L.DivIcon {
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--amber, #FBBF24);
+      border: 2px solid var(--ink, #1E293B);
+      box-shadow: 2px 2px 0 var(--ink, #1E293B);
+      color: var(--ink, #1E293B);
+      font: 900 12px/22px ui-sans-serif, system-ui, sans-serif;
+      text-align: center; cursor: grab; user-select: none;">${n}</div>`,
+    iconSize:   [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
+
 type Props = {
   startPos:        StartPos | null;
   routes:          RideRoute[];
   selectedRouteId: string | null;
   onMapClick:      (pos: StartPos) => void;
   onRouteSelect:   (route: RideRoute) => void;
+
+  // Edit mode (only used when editing === true)
+  editing?:           boolean;
+  waypoints?:         Waypoint[];
+  editPolyline?:      [number, number][];
+  onAddWaypoint?:     (lat: number, lng: number) => void;
+  onMoveWaypoint?:    (id: string, lat: number, lng: number) => void;
+  onDeleteWaypoint?:  (id: string) => void;
 };
 
 export default function RouteMap({
@@ -60,6 +103,12 @@ export default function RouteMap({
   selectedRouteId,
   onMapClick,
   onRouteSelect,
+  editing          = false,
+  waypoints        = [],
+  editPolyline,
+  onAddWaypoint,
+  onMoveWaypoint,
+  onDeleteWaypoint,
 }: Props) {
   /* Default to centre of Belgium */
   const defaultCenter: [number, number] = [50.50, 4.47];
@@ -78,11 +127,15 @@ export default function RouteMap({
         maxZoom={19}
       />
 
-      <ClickHandler onMapClick={onMapClick} />
+      <ClickHandler
+        editing={editing}
+        onMapClick={onMapClick}
+        onAddWaypoint={onAddWaypoint}
+      />
       <BoundsFitter routes={routes} startPos={startPos} />
 
-      {/* ── Routes ── */}
-      {routes.map(route => {
+      {/* ── Routes ── (hidden in edit mode; the editPolyline takes over) */}
+      {!editing && routes.map(route => {
         const selected = route.id === selectedRouteId;
         return (
           <Polyline
@@ -98,6 +151,14 @@ export default function RouteMap({
         );
       })}
 
+      {/* ── Edit-mode polyline ── */}
+      {editing && editPolyline && editPolyline.length > 0 && (
+        <Polyline
+          positions={editPolyline}
+          pathOptions={{ color: '#8B5CF6', weight: 6, opacity: 1 }}
+        />
+      )}
+
       {/* ── Start marker ── amber circle, matches design system ── */}
       {startPos && (
         <CircleMarker
@@ -111,6 +172,24 @@ export default function RouteMap({
           }}
         />
       )}
+
+      {/* ── Waypoint markers (edit mode only) ── */}
+      {editing && waypoints.map((wp, i) => (
+        <Marker
+          key={wp.id}
+          position={[wp.lat, wp.lng]}
+          icon={waypointIcon(i + 1)}
+          draggable
+          eventHandlers={{
+            dragend: e => {
+              const m = e.target as L.Marker;
+              const ll = m.getLatLng();
+              onMoveWaypoint?.(wp.id, ll.lat, ll.lng);
+            },
+            click: () => onDeleteWaypoint?.(wp.id),
+          }}
+        />
+      ))}
     </MapContainer>
   );
 }

@@ -217,6 +217,57 @@ async function fetchClean(
   return null;
 }
 
+/**
+ * Standard point-to-point routing through ordered via-points.
+ * `points` are [lat, lng] in route order — for a closed loop pass the start
+ * coord at both ends: [start, wp1, wp2, …, start].
+ */
+async function fetchViaRoute(
+  points:  [number, number][],
+  profile: string,
+): Promise<GHPath> {
+  const qs = [
+    ...points.map(([lat, lng]) => `point=${lat},${lng}`),
+    `profile=${profile}`,
+    `ch.disable=true`,
+    `lm.disable=true`,
+    `points_encoded=false`,
+    `instructions=false`,
+  ].join('&');
+
+  const res = await fetch(`${GH_URL}/route?${qs}`, { cache: 'no-store' });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    let msg = `GraphHopper error (${res.status})`;
+    try {
+      const json = JSON.parse(body) as { message?: string };
+      if (json.message) msg = json.message;
+    } catch { /* raw text fallback */ }
+    throw new Error(msg);
+  }
+  const data = await res.json() as GHResponse;
+  if (!data.paths?.[0]) throw new Error('GraphHopper returned no path');
+  return data.paths[0];
+}
+
+export async function fetchEditedRoute(
+  start:     { lat: number; lng: number },
+  waypoints: { lat: number; lng: number }[],
+  profile:   string = GH_PROFILE,
+): Promise<{ distance: number; elevation: number; coordinates: [number, number][] }> {
+  const points: [number, number][] = [
+    [start.lat, start.lng],
+    ...waypoints.map(w => [w.lat, w.lng] as [number, number]),
+    [start.lat, start.lng],
+  ];
+  const path = await fetchViaRoute(points, profile);
+  return {
+    distance:    Math.round(path.distance / 100) / 10,
+    elevation:   Math.round(path.ascend),
+    coordinates: path.points.coordinates.map(([lo, la]) => [la, lo] as [number, number]),
+  };
+}
+
 export async function fetchThreeRoutes(
   lat:        number,
   lng:        number,

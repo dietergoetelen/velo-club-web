@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getToken, getCurrentUser } from '@/lib/session';
 import { getPBWithToken } from '@/lib/pocketbase';
-import { fetchThreeRoutes } from '@/lib/graphhopper';
+import { fetchThreeRoutes, fetchEditedRoute } from '@/lib/graphhopper';
 import type { RideRoute } from '@/lib/types';
 
 // ── Generate ──────────────────────────────────────────────────────────────────
@@ -24,6 +24,27 @@ export async function generateRoutes(
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[generateRoutes]', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+// ── Recalc edited route ───────────────────────────────────────────────────────
+
+export type RecalcResult =
+  | { ok: true;  distance: number; elevation: number; coordinates: [number, number][] }
+  | { ok: false; error: string };
+
+export async function recalcEditedRoute(
+  start:     { lat: number; lng: number },
+  waypoints: { lat: number; lng: number }[],
+  profile?:  string,
+): Promise<RecalcResult> {
+  try {
+    const r = await fetchEditedRoute(start, waypoints, profile);
+    return { ok: true, ...r };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[recalcEditedRoute]', msg);
     return { ok: false, error: msg };
   }
 }

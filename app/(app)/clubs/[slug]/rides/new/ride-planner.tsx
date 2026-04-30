@@ -1,11 +1,58 @@
 'use client';
 
-import { useState, useMemo, useTransition, useActionState } from 'react';
+import { useState, useMemo, useEffect, useRef, useTransition, useActionState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { generateRoutes, saveRide } from '@/lib/actions/rides';
+import { generateRoutes, saveRide, recalcEditedRoute } from '@/lib/actions/rides';
 import { upcomingOccurrences, DAY_NAMES_SHORT } from '@/lib/schedules';
 import type { ClubSchedule, RideRoute } from '@/lib/types';
+
+type Waypoint = {
+  id:           string;
+  lat:          number;
+  lng:          number;
+  polylineIdx:  number;   // sort key — closest index in the picked route
+};
+
+const ANCHOR_COUNT = 10;  // initial waypoints sampled from the picked route
+
+function newWaypointId(): string {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+// Find polyline index closest to a [lat, lng] point.
+function closestPolylineIndex(line: [number, number][], lat: number, lng: number): number {
+  let best = 0;
+  let bestD2 = Infinity;
+  for (let i = 0; i < line.length; i++) {
+    const dy = line[i][0] - lat;
+    const dx = line[i][1] - lng;
+    const d2 = dy * dy + dx * dx;
+    if (d2 < bestD2) { bestD2 = d2; best = i; }
+  }
+  return best;
+}
+
+// Evenly-spaced initial waypoints sampled from a polyline. They keep the
+// route shape stable when the user adds extra waypoints; the user is free to
+// drag or remove them.
+function buildAnchors(polyline: [number, number][]): Waypoint[] {
+  const out: Waypoint[] = [];
+  if (polyline.length < 4) return out;
+  const step = Math.floor(polyline.length / (ANCHOR_COUNT + 1));
+  if (step < 1) return out;
+  for (let i = 1; i <= ANCHOR_COUNT; i++) {
+    const idx = i * step;
+    if (idx <= 0 || idx >= polyline.length - 1) continue;
+    const [lat, lng] = polyline[idx];
+    out.push({
+      id:          newWaypointId(),
+      lat, lng,
+      polylineIdx: idx,
+    });
+  }
+  return out;
+}
 
 const RouteMap = dynamic(() => import('./route-map'), {
   ssr:     false,
@@ -17,7 +64,7 @@ const RouteMap = dynamic(() => import('./route-map'), {
 });
 
 type StartPos = { lat: number; lng: number };
-type Step = 'setup' | 'generating' | 'picking';
+type Step = 'setup' | 'generating' | 'picking' | 'editing';
 
 function tomorrow() {
   const d = new Date();
@@ -138,6 +185,21 @@ export function RidePlanner({
   const [genError, setGenError]           = useState<string | null>(null);
   const [profile, setProfile]             = useState<string>('bike');
 
+  // Edit mode state
+  const [waypoints, setWaypoints]   = useState<Waypoint[]>([]);
+  const [originalPoly, setOriginalPoly] = useState<[number, number][]>([]);
+  const [editPoly, setEditPoly]     = useState<[number, number][]>([]);
+  const [editDist, setEditDist]     = useState<number>(0);
+  const [editElev, setEditElev]     = useState<number>(0);
+  const [editError, setEditError]   = useState<string | null>(null);
+  const [editPending, setEditPending] = useState<boolean>(false);
+  const recalcSeq = useRef(0);
+
+  const orderedWaypoints = useMemo(
+    () => [...waypoints].sort((a, b) => a.polylineIdx - b.polylineIdx),
+    [waypoints],
+  );
+
   const [isPending, startTransition] = useTransition();
   const [saveError, saveAction]      = useActionState(saveRide, null);
 
@@ -186,6 +248,88 @@ export function RidePlanner({
     setSelectedRoute(null);
     setStep('setup');
     setGenError(null);
+  };
+
+  // ── Edit mode ──────────────────────────────────────────────────────────────
+
+  const enterEdit = () => {
+    if (!selectedRoute) return;
+    setOriginalPoly(selectedRoute.coordinates);
+    setEditPoly(selectedRoute.coordinates);
+    setEditDist(selectedRoute.distance);
+    setEditElev(selectedRoute.elevation);
+    setWaypoints(buildAnchors(selectedRoute.coordinates));
+    setEditError(null);
+    setStep('editing');
+  };
+
+  const exitEdit = () => {
+    setStep('picking');
+    setWaypoints([]);
+    setOriginalPoly([]);
+    setEditError(null);
+  };
+
+  // Recalculate edited route whenever waypoints change.
+  useEffect(() => {
+    if (step !== 'editing' || !startPos) return;
+    const seq = ++recalcSeq.current;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+
+      // Nothing to route through: revert to the picked round_trip polyline.
+      if (orderedWaypoints.length === 0) {
+        if (selectedRoute) {
+          setEditPoly(selectedRoute.coordinates);
+          setEditDist(selectedRoute.distance);
+          setEditElev(selectedRoute.elevation);
+        }
+        setEditPending(false);
+        setEditError(null);
+        return;
+      }
+
+      setEditPending(true);
+      setEditError(null);
+      const result = await recalcEditedRoute(
+        startPos,
+        orderedWaypoints.map(({ lat, lng }) => ({ lat, lng })),
+        profile,
+      );
+      if (cancelled || seq !== recalcSeq.current) return;
+      setEditPending(false);
+      if (result.ok) {
+        setEditPoly(result.coordinates);
+        setEditDist(result.distance);
+        setEditElev(result.elevation);
+      } else {
+        setEditError(result.error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [step, orderedWaypoints, startPos, profile, selectedRoute]);
+
+  const addWaypoint = (lat: number, lng: number) => {
+    if (!originalPoly.length) return;
+    const polylineIdx = closestPolylineIndex(originalPoly, lat, lng);
+    setWaypoints(prev => [
+      ...prev,
+      { id: newWaypointId(), lat, lng, polylineIdx },
+    ]);
+  };
+
+  const moveWaypoint = (id: string, lat: number, lng: number) => {
+    setWaypoints(prev => prev.map(w =>
+      w.id === id
+        ? { ...w, lat, lng, polylineIdx: closestPolylineIndex(originalPoly, lat, lng) }
+        : w,
+    ));
+  };
+
+  const deleteWaypoint = (id: string) => {
+    setWaypoints(prev => prev.filter(w => w.id !== id));
   };
 
   const canGenerate = !!startPos && !isPending;
@@ -418,47 +562,137 @@ export function RidePlanner({
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={handleRegenerate}
-                disabled={isPending}
-                className="btn-secondary w-full text-sm"
-                style={{ opacity: isPending ? 0.5 : 1 }}
-              >
-                {isPending ? '↺ Finding better routes…' : '↺ Try different routes'}
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={isPending}
+                  className="btn-secondary text-sm"
+                  style={{ opacity: isPending ? 0.5 : 1 }}
+                >
+                  {isPending ? '↺ Trying…' : '↺ Try other'}
+                </button>
+                <button
+                  type="button"
+                  onClick={enterEdit}
+                  disabled={isPending || !selectedRoute}
+                  className="btn-secondary text-sm"
+                >
+                  ✎ Edit route
+                </button>
+              </div>
             </>
           )}
 
-          {/* ── Save form ── */}
-          {step === 'picking' && selectedRoute && (
-            <form action={saveAction} className="space-y-4 pt-1">
-              <input type="hidden" name="clubId"      value={clubId} />
-              <input type="hidden" name="slug"        value={slug} />
-              <input type="hidden" name="distanceKm"  value={selectedRoute.distance} />
-              <input type="hidden" name="elevationM"  value={selectedRoute.elevation} />
-              <input type="hidden" name="coordinates" value={JSON.stringify(selectedRoute.coordinates)} />
-              <input type="hidden" name="date"        value={date} />
-              <input type="hidden" name="time"        value={time} />
-              <input type="hidden" name="scheduleId"  value={scheduleId} />
-
-              {saveError && <p className="field-error">{saveError}</p>}
-
-              <div>
-                <label className="field-label">Ride name</label>
-                <input
-                  name="name"
-                  type="text"
-                  required
-                  placeholder={`Road ride · ${selectedRoute.distance} km`}
-                  className="field-input"
-                />
+          {/* ── Edit mode ── */}
+          {step === 'editing' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="field-label !mb-0">Editing route</p>
+                <button
+                  type="button"
+                  onClick={exitEdit}
+                  className="text-xs text-ink-soft hover:text-ink font-bold"
+                >
+                  ← Back
+                </button>
               </div>
 
-              <button type="submit" className="btn-primary w-full">
-                Save ride →
-              </button>
-            </form>
+              <div
+                className="rounded-lg p-3 text-sm"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--amber), white 85%)',
+                  border:          '2px solid var(--amber)',
+                }}
+              >
+                <p className="font-bold text-ink tabular-nums">
+                  {editDist} km · {editElev} m ↑
+                  {editPending && (
+                    <span className="ml-2 text-xs text-ink-soft font-normal">recalculating…</span>
+                  )}
+                </p>
+                <p className="text-xs text-ink-soft mt-1">
+                  Click the route on the map to add a waypoint, drag a marker to move,
+                  click a marker to remove.
+                </p>
+              </div>
+
+              {editError && <p className="field-error">{editError}</p>}
+
+              {orderedWaypoints.length > 0 && (
+                <div className="space-y-1">
+                  {orderedWaypoints.map((wp, i) => (
+                    <div
+                      key={wp.id}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
+                      style={{ border: '2px solid var(--line)' }}
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full font-black text-[11px] flex items-center justify-center shrink-0"
+                        style={{
+                          backgroundColor: 'var(--amber)',
+                          border:          '2px solid var(--ink)',
+                          color:           'var(--ink)',
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 tabular-nums text-ink-soft">
+                        {wp.lat.toFixed(5)}, {wp.lng.toFixed(5)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => deleteWaypoint(wp.id)}
+                        className="text-ink-soft hover:text-ink font-black"
+                        aria-label={`Remove waypoint ${i + 1}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Save form (picking and editing share this) ── */}
+          {(step === 'picking' || step === 'editing') && selectedRoute && (
+            (() => {
+              const useEdit = step === 'editing';
+              const distance    = useEdit ? editDist : selectedRoute.distance;
+              const elevation   = useEdit ? editElev : selectedRoute.elevation;
+              const coordinates = useEdit ? editPoly : selectedRoute.coordinates;
+              const canSave     = !useEdit || (!editPending && !editError && coordinates.length > 0);
+              return (
+                <form action={saveAction} className="space-y-4 pt-1">
+                  <input type="hidden" name="clubId"      value={clubId} />
+                  <input type="hidden" name="slug"        value={slug} />
+                  <input type="hidden" name="distanceKm"  value={distance} />
+                  <input type="hidden" name="elevationM"  value={elevation} />
+                  <input type="hidden" name="coordinates" value={JSON.stringify(coordinates)} />
+                  <input type="hidden" name="date"        value={date} />
+                  <input type="hidden" name="time"        value={time} />
+                  <input type="hidden" name="scheduleId"  value={scheduleId} />
+
+                  {saveError && <p className="field-error">{saveError}</p>}
+
+                  <div>
+                    <label className="field-label">Ride name</label>
+                    <input
+                      name="name"
+                      type="text"
+                      required
+                      placeholder={`Road ride · ${distance} km`}
+                      className="field-input"
+                    />
+                  </div>
+
+                  <button type="submit" disabled={!canSave} className="btn-primary w-full">
+                    Save ride →
+                  </button>
+                </form>
+              );
+            })()
           )}
 
         </div>
@@ -472,6 +706,12 @@ export function RidePlanner({
           selectedRouteId={selectedRoute?.id ?? null}
           onMapClick={setStartPos}
           onRouteSelect={setSelectedRoute}
+          editing={step === 'editing'}
+          waypoints={orderedWaypoints}
+          editPolyline={editPoly}
+          onAddWaypoint={addWaypoint}
+          onMoveWaypoint={moveWaypoint}
+          onDeleteWaypoint={deleteWaypoint}
         />
 
         {/* Pill instruction — only when no start has been set */}
