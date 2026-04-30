@@ -1,7 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
-import type { Club, ClubMember } from '@/lib/types';
+import { approveJoinRequest, rejectJoinRequest } from '@/lib/actions/clubs';
+import { JoinRequestForm } from './join-request-form';
+import type { Club, ClubMember, JoinRequest } from '@/lib/types';
 
 export default async function ClubPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -22,67 +24,127 @@ export default async function ClubPage({ params }: { params: Promise<{ slug: str
     sort:   'role',
   });
 
-  const myMembership = members.find(m => m.user === user.id);
-  const isCaptain    = myMembership?.role === 'captain';
+  const myMembership  = members.find(m => m.user === user.id);
+  const isCaptain     = myMembership?.role === 'captain';
+  const isMember      = !!myMembership;
+
+  // Check if user already has a pending request
+  const myRequest = !isMember
+    ? await pb.collection('join_requests')
+        .getFirstListItem<JoinRequest>(`club = "${club.id}" && user = "${user.id}" && status = "pending"`)
+        .catch(() => null)
+    : null;
+
+  // Captain: fetch pending join requests
+  const pendingRequests = isCaptain
+    ? await pb.collection('join_requests').getFullList<JoinRequest>({
+        filter: `club = "${club.id}" && status = "pending"`,
+      }).catch(() => [])
+    : [];
 
   return (
     <div className="space-y-8">
+
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{club.name}</h1>
+          <h1 className="text-2xl font-bold text-ink tracking-tight">{club.name}</h1>
           {club.description && (
-            <p className="text-slate-500 mt-1">{club.description}</p>
+            <p className="text-ink-muted mt-1">{club.description}</p>
           )}
         </div>
         {isCaptain && (
-          <Link
-            href={`/clubs/${slug}/invite`}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            Invite member
+          <Link href={`/clubs/${slug}/settings`} className="btn-secondary text-xs px-3 py-2 shrink-0">
+            Settings
           </Link>
         )}
       </div>
 
+      {/* Non-member: join request */}
+      {!isMember && (
+        <div className="card p-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-medium text-ink">Want to ride with {club.name}?</p>
+            <p className="text-sm text-ink-muted mt-0.5">
+              {myRequest
+                ? 'Your request is pending — the captain will review it shortly.'
+                : 'Send a join request to the captain.'}
+            </p>
+          </div>
+          {!myRequest && <JoinRequestForm clubId={club.id} slug={slug} />}
+          {myRequest  && <span className="badge-neutral shrink-0">Pending</span>}
+        </div>
+      )}
+
+      {/* Captain: pending requests */}
+      {isCaptain && pendingRequests.length > 0 && (
+        <section>
+          <p className="eyebrow mb-3">Join requests · {pendingRequests.length}</p>
+          <div className="card divide-y divide-line">
+            {pendingRequests.map(req => (
+              <div key={req.id} className="flex items-center justify-between px-5 py-4 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-ink">{req.user_name || req.user_email}</p>
+                  {req.user_name && req.user_email && (
+                    <p className="text-xs text-ink-faint mt-0.5">{req.user_email}</p>
+                  )}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <form action={approveJoinRequest}>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input type="hidden" name="clubId"    value={club.id} />
+                    <input type="hidden" name="slug"      value={slug} />
+                    <button type="submit" className="btn-primary text-xs px-3 py-2">
+                      Approve
+                    </button>
+                  </form>
+                  <form action={rejectJoinRequest}>
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <input type="hidden" name="clubId"    value={club.id} />
+                    <input type="hidden" name="slug"      value={slug} />
+                    <button type="submit" className="btn-secondary text-xs px-3 py-2">
+                      Decline
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Members */}
       <section>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-          Members ({members.length})
-        </h2>
-        <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+        <p className="eyebrow mb-3">Members · {members.length}</p>
+        <div className="card divide-y divide-line">
           {members.map(m => (
-            <div key={m.id} className="flex items-center justify-between px-5 py-3">
+            <div key={m.id} className="flex items-center justify-between px-5 py-3.5">
               <div>
-                <p className="text-sm font-medium text-slate-900">{m.user_name || m.user_email}</p>
+                <p className="text-sm font-medium text-ink">{m.user_name || m.user_email}</p>
                 {m.user_name && m.user_email && (
-                  <p className="text-xs text-slate-400">{m.user_email}</p>
+                  <p className="text-xs text-ink-faint mt-0.5">{m.user_email}</p>
                 )}
               </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                m.role === 'captain'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-500'
-              }`}>
-                {m.role}
-              </span>
+              {m.role === 'captain'
+                ? <span className="badge-brand">captain</span>
+                : <span className="badge-neutral">member</span>
+              }
             </div>
           ))}
         </div>
       </section>
 
-      {/* Upcoming rides — Phase 3 placeholder */}
+      {/* Upcoming rides */}
       <section>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-          Upcoming rides
-        </h2>
-        <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-400 text-sm">
+        <p className="eyebrow mb-3">Upcoming rides</p>
+        <div className="card p-8 text-center text-ink-faint text-sm">
           No rides planned yet.
           {isCaptain && (
-            <p className="mt-1">Route planning coming in the next update.</p>
+            <span className="block mt-1 text-ink-muted">Route planning coming soon.</span>
           )}
         </div>
       </section>
+
     </div>
   );
 }

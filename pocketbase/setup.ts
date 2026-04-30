@@ -66,18 +66,21 @@ async function main() {
     deleteRule: "@request.auth.id != ''",
   });
 
-  // ── invitations ────────────────────────────────────────────────────────────
-  await upsertCollection('invitations', {
+  // ── join_requests ──────────────────────────────────────────────────────────
+  await upsertCollection('join_requests', {
     type: 'base',
     fields: [
-      { name: 'club',     type: 'text',  required: true },
-      { name: 'email',    type: 'email', required: true },
-      { name: 'token',    type: 'text',  required: true },
-      { name: 'accepted', type: 'bool',  required: false },
-      { name: 'expires',  type: 'date',  required: true },
+      { name: 'club',       type: 'text',   required: true },
+      { name: 'user',       type: 'text',   required: true },
+      { name: 'user_name',  type: 'text',   required: false },
+      { name: 'user_email', type: 'email',  required: false },
+      {
+        name: 'status', type: 'select', required: true,
+        values: ['pending', 'approved', 'rejected'], maxSelect: 1,
+      },
     ],
     listRule:   "@request.auth.id != ''",
-    viewRule:   '',
+    viewRule:   "@request.auth.id != ''",
     createRule: "@request.auth.id != ''",
     updateRule: "@request.auth.id != ''",
     deleteRule: "@request.auth.id != ''",

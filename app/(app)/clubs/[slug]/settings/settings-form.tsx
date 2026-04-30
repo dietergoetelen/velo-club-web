@@ -1,0 +1,44 @@
+'use client';
+
+import { useActionState } from 'react';
+import { updateClub } from '@/lib/actions/clubs';
+import { FormButton } from '@/components/form-button';
+import type { Club } from '@/lib/types';
+
+export function SettingsForm({ club }: { club: Club }) {
+  const [error, action] = useActionState(updateClub, null);
+
+  return (
+    <div className="card p-8">
+      <form action={action} className="space-y-4">
+        <input type="hidden" name="clubId" value={club.id} />
+        <input type="hidden" name="slug"   value={club.slug} />
+
+        {error && <p className="field-error">{error}</p>}
+
+        <div>
+          <label className="field-label">Club name</label>
+          <input
+            name="name" type="text" required
+            defaultValue={club.name}
+            className="field-input"
+          />
+        </div>
+
+        <div>
+          <label className="field-label">
+            Description
+            <span className="text-ink-faint font-normal ml-1">(optional)</span>
+          </label>
+          <textarea
+            name="description" rows={3}
+            defaultValue={club.description}
+            className="field-input resize-none"
+          />
+        </div>
+
+        <FormButton label="Save changes" loadingLabel="Saving…" />
+      </form>
+    </div>
+  );
+}

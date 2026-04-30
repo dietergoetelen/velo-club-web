@@ -56,16 +56,15 @@ export async function getAuthenticatedPB(): Promise<PocketBase> {
   return getPBWithToken(token);
 }
 
-export async function getMembership(userId: string): Promise<ClubMember | null> {
+export async function getMemberships(userId: string): Promise<ClubMember[]> {
   const token = await getToken();
-  if (!token) return null;
+  if (!token) return [];
   const pb = getPBWithToken(token);
   try {
-    const result = await pb.collection('club_members').getFirstListItem<ClubMember>(
-      `user = "${userId}"`,
-    );
-    return result;
+    return await pb.collection('club_members').getFullList<ClubMember>({
+      filter: `user = "${userId}"`,
+    });
   } catch {
-    return null;
+    return [];
   }
 }

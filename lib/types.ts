@@ -22,12 +22,12 @@ export interface ClubMember extends PBRecord {
   points:     number;
 }
 
-export interface Invitation extends PBRecord {
-  club:       string; // relation → Club.id
-  email:      string;
-  token:      string;
-  accepted:   boolean;
-  expires:    string;
+export interface JoinRequest extends PBRecord {
+  club:       string;
+  user:       string;
+  user_name:  string;
+  user_email: string;
+  status:     'pending' | 'approved' | 'rejected';
 }
 
 export interface Route extends PBRecord {

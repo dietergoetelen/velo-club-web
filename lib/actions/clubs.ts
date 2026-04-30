@@ -1,9 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { getPBWithToken } from '@/lib/pocketbase';
 import { getToken, getCurrentUser } from '@/lib/session';
-import crypto from 'crypto';
 
 function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -42,14 +42,12 @@ export async function createClub(
   redirect(`/clubs/${slug}`);
 }
 
-export async function createInvitation(
-  _prev: { error: string | null; link: string | null },
+export async function requestToJoin(
+  _prev: string | null,
   form: FormData,
-): Promise<{ error: string | null; link: string | null }> {
-  const email  = (form.get('email') as string).trim();
+): Promise<string | null> {
   const clubId = form.get('clubId') as string;
-
-  if (!email) return { error: 'Email is required.', link: null };
+  const slug   = form.get('slug')   as string;
 
   const token = await getToken();
   const user  = await getCurrentUser();
@@ -57,28 +55,112 @@ export async function createInvitation(
 
   const pb = getPBWithToken(token);
 
-  // Verify current user is captain of this club
+  const alreadyMember = await pb.collection('club_members')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}"`)
+    .catch(() => null);
+  if (alreadyMember) return 'You are already a member of this club.';
+
+  const existingRequest = await pb.collection('join_requests')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && status = "pending"`)
+    .catch(() => null);
+  if (existingRequest) return 'You already have a pending request.';
+
+  try {
+    await pb.collection('join_requests').create({
+      club:       clubId,
+      user:       user.id,
+      user_name:  user.name,
+      user_email: user.email,
+      status:     'pending',
+    });
+  } catch {
+    return 'Failed to send request. Please try again.';
+  }
+
+  redirect(`/clubs/${slug}`);
+}
+
+export async function updateClub(
+  _prev: string | null,
+  form: FormData,
+): Promise<string | null> {
+  const clubId      = form.get('clubId')      as string;
+  const slug        = form.get('slug')        as string;
+  const name        = (form.get('name')        as string).trim();
+  const description = (form.get('description') as string).trim();
+
+  if (!name) return 'Club name is required.';
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
   const membership = await pb.collection('club_members')
     .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
     .catch(() => null);
-
-  if (!membership) return { error: 'Only the captain can invite members.', link: null };
-
-  const inviteToken = crypto.randomBytes(24).toString('hex');
-  const expires     = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  if (!membership) return 'Only the captain can edit club settings.';
 
   try {
-    await pb.collection('invitations').create({
-      club:     clubId,
-      email,
-      token:    inviteToken,
-      accepted: false,
-      expires,
-    });
+    await pb.collection('clubs').update(clubId, { name, description });
   } catch {
-    return { error: 'Failed to create invitation.', link: null };
+    return 'Failed to save changes.';
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
-  return { error: null, link: `${baseUrl}/invite/${inviteToken}` };
+  revalidatePath(`/clubs/${slug}`);
+  redirect(`/clubs/${slug}`);
+}
+
+export async function approveJoinRequest(form: FormData): Promise<void> {
+  const requestId = form.get('requestId') as string;
+  const clubId    = form.get('clubId')    as string;
+  const slug      = form.get('slug')      as string;
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const membership = await pb.collection('club_members')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!membership) return;
+
+  const req = await pb.collection('join_requests').getOne(requestId).catch(() => null);
+  if (!req) return;
+
+  await pb.collection('club_members').create({
+    club:       clubId,
+    user:       req['user'],
+    user_name:  req['user_name'],
+    user_email: req['user_email'],
+    role:       'member',
+    points:     0,
+  });
+  await pb.collection('join_requests').update(requestId, { status: 'approved' });
+
+  revalidatePath(`/clubs/${slug}`);
+}
+
+export async function rejectJoinRequest(form: FormData): Promise<void> {
+  const requestId = form.get('requestId') as string;
+  const clubId    = form.get('clubId')    as string;
+  const slug      = form.get('slug')      as string;
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const membership = await pb.collection('club_members')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!membership) return;
+
+  await pb.collection('join_requests').update(requestId, { status: 'rejected' }).catch(() => null);
+
+  revalidatePath(`/clubs/${slug}`);
 }

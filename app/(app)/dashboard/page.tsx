@@ -1,34 +1,100 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, getMembership, getAuthenticatedPB } from '@/lib/session';
-import type { Club } from '@/lib/types';
+import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/session';
+import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
+import type { Club, ClubMember, JoinRequest } from '@/lib/types';
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
 
-  const membership = await getMembership(user.id);
+  const pb          = await getAuthenticatedPB();
+  const memberships = await getMemberships(user.id);
+  const myClubIds   = new Set(memberships.map(m => m.club));
 
-  if (membership) {
-    const pb   = await getAuthenticatedPB();
-    const club = await pb.collection('clubs').getOne<Club>(membership.club).catch(() => null);
-    if (club) redirect(`/clubs/${club.slug}`);
-  }
+  const allClubs  = await pb.collection('clubs').getFullList<Club>({ sort: 'name' }).catch(() => []);
+  const myClubs   = allClubs.filter(c => myClubIds.has(c.id));
+  const otherClubs = allClubs.filter(c => !myClubIds.has(c.id));
+
+  // Pending requests the user has already sent
+  const myRequests = otherClubs.length
+    ? await pb.collection('join_requests').getFullList<JoinRequest>({
+        filter: `user = "${user.id}" && status = "pending"`,
+      }).catch(() => [])
+    : [];
+  const pendingClubIds = new Set(myRequests.map(r => r.club));
+
+  const roleFor = (clubId: string): ClubMember['role'] | undefined =>
+    memberships.find(m => m.club === clubId)?.role;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <div className="bg-white rounded-2xl border border-slate-200 p-10 max-w-sm w-full">
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">No club yet</h2>
-        <p className="text-slate-500 text-sm mb-6">
-          Create your own club or ask a captain to send you an invitation link.
-        </p>
-        <Link
-          href="/clubs/new"
-          className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
-        >
-          Create a club
-        </Link>
-      </div>
+    <div className="space-y-10">
+
+      {/* My clubs */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <p className="eyebrow">My clubs · {myClubs.length}</p>
+          <Link href="/clubs/new" className="btn-secondary text-xs px-3 py-2">
+            + New club
+          </Link>
+        </div>
+
+        {myClubs.length === 0 ? (
+          <div className="card p-8 text-center text-ink-muted text-sm">
+            You're not in any club yet — create one or request to join below.
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {myClubs.map(club => (
+              <Link
+                key={club.id}
+                href={`/clubs/${club.slug}`}
+                className="card p-5 hover:border-line-mid transition-colors group"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-semibold text-ink group-hover:text-brand transition-colors">
+                    {club.name}
+                  </p>
+                  {roleFor(club.id) === 'captain'
+                    ? <span className="badge-brand shrink-0">captain</span>
+                    : <span className="badge-neutral shrink-0">member</span>
+                  }
+                </div>
+                {club.description && (
+                  <p className="text-sm text-ink-muted mt-1.5 line-clamp-2">{club.description}</p>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Discover */}
+      {otherClubs.length > 0 && (
+        <section>
+          <p className="eyebrow mb-4">Discover clubs</p>
+          <div className="card divide-y divide-line">
+            {otherClubs.map(club => {
+              const isPending = pendingClubIds.has(club.id);
+              return (
+                <div key={club.id} className="flex items-center justify-between gap-4 px-5 py-4">
+                  <div className="min-w-0">
+                    <p className="font-medium text-ink truncate">{club.name}</p>
+                    {club.description && (
+                      <p className="text-sm text-ink-muted mt-0.5 truncate">{club.description}</p>
+                    )}
+                  </div>
+                  {isPending
+                    ? <span className="badge-neutral shrink-0">Pending</span>
+                    : <JoinRequestForm clubId={club.id} slug={club.slug} />
+                  }
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
     </div>
   );
 }

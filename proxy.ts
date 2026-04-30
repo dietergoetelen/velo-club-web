@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC = ['/login', '/register', '/invite'];
+const PUBLIC = ['/login', '/register'];
 
 function isValidToken(token: string): boolean {
   try {

@@ -9,31 +9,27 @@ export default function NewClubPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Create a club</h1>
-      <div className="bg-white rounded-2xl border border-slate-200 p-8">
+      <h1 className="text-2xl font-bold text-ink tracking-tight mb-6">Create a club</h1>
+      <div className="card p-8">
         <form action={action} className="space-y-4">
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-          )}
+          {error && <p className="field-error">{error}</p>}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Club name</label>
+            <label className="field-label">Club name</label>
             <input
-              name="name"
-              type="text"
-              required
+              name="name" type="text" required
               placeholder="e.g. Les Cyclistes de Liège"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="field-input"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Description <span className="text-slate-400 font-normal">(optional)</span>
+            <label className="field-label">
+              Description
+              <span className="text-ink-faint font-normal ml-1">(optional)</span>
             </label>
             <textarea
-              name="description"
-              rows={3}
+              name="description" rows={3}
               placeholder="A short description of your club…"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              className="field-input resize-none"
             />
           </div>
           <FormButton label="Create club" loadingLabel="Creating…" />
