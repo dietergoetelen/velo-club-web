@@ -53,6 +53,23 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
           accent="var(--amber)"
         />
 
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="schedules_enabled"
+            value="1"
+            defaultChecked={club.schedules_enabled}
+            className="mt-1 w-4 h-4 accent-current"
+            style={{ accentColor: 'var(--accent)' }}
+          />
+          <span>
+            <span className="field-label !mb-0 block">Recurring schedules</span>
+            <span className="text-xs text-ink-soft block mt-0.5">
+              Define weekly ride slots (e.g. A/B/C groups). Captains can pick one when planning a ride.
+            </span>
+          </span>
+        </label>
+
         <FormButton label="Save changes →" loadingLabel="Saving…" />
       </form>
     </div>

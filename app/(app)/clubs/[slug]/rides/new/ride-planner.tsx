@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition, useActionState } from 'react';
+import { useState, useMemo, useTransition, useActionState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { generateRoutes, saveRide } from '@/lib/actions/rides';
-import type { RideRoute } from '@/lib/types';
+import { upcomingOccurrences, DAY_NAMES_SHORT } from '@/lib/schedules';
+import type { ClubSchedule, RideRoute } from '@/lib/types';
 
 const RouteMap = dynamic(() => import('./route-map'), {
   ssr:     false,
@@ -80,15 +81,35 @@ export function RidePlanner({
   clubId,
   slug,
   clubName,
+  schedules,
 }: {
-  clubId:   string;
-  slug:     string;
-  clubName: string;
+  clubId:    string;
+  slug:      string;
+  clubName:  string;
+  schedules: ClubSchedule[];
 }) {
   const [startPos, setStartPos] = useState<StartPos | null>(null);
   const [date, setDate]         = useState(tomorrow);
   const [time, setTime]         = useState('08:00');
   const [distance, setDistance] = useState(30);
+  const [scheduleId, setScheduleId] = useState<string>('');
+
+  const occurrences = useMemo(() => upcomingOccurrences(schedules, 7), [schedules]);
+
+  const pickSchedule = (id: string, occurrenceDate: Date) => {
+    if (scheduleId === id) {
+      setScheduleId('');
+      return;
+    }
+    setScheduleId(id);
+    const yyyy = occurrenceDate.getFullYear();
+    const mm   = String(occurrenceDate.getMonth() + 1).padStart(2, '0');
+    const dd   = String(occurrenceDate.getDate()).padStart(2, '0');
+    const hh   = String(occurrenceDate.getHours()).padStart(2, '0');
+    const min  = String(occurrenceDate.getMinutes()).padStart(2, '0');
+    setDate(`${yyyy}-${mm}-${dd}`);
+    setTime(`${hh}:${min}`);
+  };
 
   const [routes, setRoutes]               = useState<RideRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<RideRoute | null>(null);
@@ -224,6 +245,36 @@ export function RidePlanner({
             )}
           </div>
 
+          {/* ── Schedule picker ── */}
+          {occurrences.length > 0 && (
+            <div>
+              <p className="field-label">Use schedule</p>
+              <div className="flex flex-wrap gap-2">
+                {occurrences.map(({ schedule, date: d }) => {
+                  const isSelected = scheduleId === schedule.id;
+                  return (
+                    <button
+                      key={schedule.id}
+                      type="button"
+                      onClick={() => pickSchedule(schedule.id, d)}
+                      disabled={isPending}
+                      className="text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+                      style={{
+                        backgroundColor: isSelected ? 'var(--amber)' : 'white',
+                        border:          '2px solid var(--ink)',
+                        boxShadow:       isSelected ? '2px 2px 0px var(--ink)' : '2px 2px 0px var(--line)',
+                        transform:       isSelected ? 'translate(-1px,-1px)' : 'none',
+                        color:           'var(--ink)',
+                      }}
+                    >
+                      {DAY_NAMES_SHORT[d.getDay()]} {d.getDate()} {d.toLocaleString('en-GB', { month: 'short' })} · {schedule.time} · {schedule.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* ── Date + time ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -232,7 +283,7 @@ export function RidePlanner({
                 type="date"
                 value={date}
                 min={new Date().toISOString().split('T')[0]}
-                onChange={e => setDate(e.target.value)}
+                onChange={e => { setDate(e.target.value); setScheduleId(''); }}
                 disabled={isPending}
                 className="field-input"
               />
@@ -242,7 +293,7 @@ export function RidePlanner({
               <input
                 type="time"
                 value={time}
-                onChange={e => setTime(e.target.value)}
+                onChange={e => { setTime(e.target.value); setScheduleId(''); }}
                 disabled={isPending}
                 className="field-input"
               />
@@ -338,6 +389,7 @@ export function RidePlanner({
               <input type="hidden" name="coordinates" value={JSON.stringify(selectedRoute.coordinates)} />
               <input type="hidden" name="date"        value={date} />
               <input type="hidden" name="time"        value={time} />
+              <input type="hidden" name="scheduleId"  value={scheduleId} />
 
               {saveError && <p className="field-error">{saveError}</p>}
 

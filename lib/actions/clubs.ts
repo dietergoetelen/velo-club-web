@@ -100,12 +100,13 @@ export async function updateClub(
   _prev: string | null,
   form: FormData,
 ): Promise<string | null> {
-  const clubId       = form.get('clubId')       as string;
-  const slug         = form.get('slug')         as string;
-  const name         = (form.get('name')        as string).trim();
-  const description  = (form.get('description') as string).trim();
-  const avatar       = form.get('avatar')       as File | null;
-  const avatarRemove = form.get('avatar_remove') === '1';
+  const clubId           = form.get('clubId')           as string;
+  const slug             = form.get('slug')             as string;
+  const name             = (form.get('name')            as string).trim();
+  const description      = (form.get('description')     as string).trim();
+  const avatar           = form.get('avatar')           as File | null;
+  const avatarRemove     = form.get('avatar_remove')    === '1';
+  const schedulesEnabled = form.get('schedules_enabled') === '1';
 
   if (!name) return 'Club name is required.';
 
@@ -120,7 +121,11 @@ export async function updateClub(
     .catch(() => null);
   if (!membership) return 'Only the captain can edit club settings.';
 
-  const data: Record<string, unknown> = { name, description };
+  const data: Record<string, unknown> = {
+    name,
+    description,
+    schedules_enabled: schedulesEnabled,
+  };
   if (avatar && avatar.size > 0) data['avatar'] = avatar;
   else if (avatarRemove)         data['avatar'] = null;
 

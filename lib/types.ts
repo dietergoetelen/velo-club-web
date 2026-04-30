@@ -8,10 +8,18 @@ export interface PBRecord {
 // ── Collections ───────────────────────────────────────────────────────────────
 
 export interface Club extends PBRecord {
-  name:        string;
-  description: string;
-  slug:        string;
-  avatar:      string;  // file name; '' when no avatar
+  name:              string;
+  description:       string;
+  slug:              string;
+  avatar:            string;  // file name; '' when no avatar
+  schedules_enabled: boolean;
+}
+
+export interface ClubSchedule extends PBRecord {
+  club:        string;  // Club.id
+  label:       string;  // free text — e.g. "A", "B", "Social"
+  day_of_week: number;  // 0 = Sunday … 6 = Saturday
+  time:        string;  // "HH:MM"
 }
 
 export interface ClubMember extends PBRecord {
@@ -37,6 +45,7 @@ export interface Route extends PBRecord {
   surface:     'all' | 'road' | 'gravel';
   coordinates: [number, number][]; // [lat, lng][]
   status:      'proposed' | 'confirmed' | 'completed' | 'cancelled';
+  schedule:    string;  // ClubSchedule.id; '' when none
 }
 
 export interface Vote extends PBRecord {

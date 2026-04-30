@@ -4,7 +4,8 @@ import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
-import type { Club, ClubMember, JoinRequest, Route } from '@/lib/types';
+import { DAY_NAMES } from '@/lib/schedules';
+import type { Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
 function clubAccent(id: string) { return PALETTE[id.charCodeAt(0) % 4]; }
@@ -29,6 +30,115 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-GB', {
     hour: '2-digit', minute: '2-digit', hour12: false,
   });
+}
+
+interface ScheduleGroup {
+  schedule: ClubSchedule | null;  // null = ghost group
+  rides:    Route[];
+}
+
+function buildScheduleGroups(schedules: ClubSchedule[], rides: Route[]): ScheduleGroup[] {
+  const byId = new Map<string, Route[]>();
+  schedules.forEach(s => byId.set(s.id, []));
+  const ghost: Route[] = [];
+
+  for (const ride of rides) {
+    if (ride.schedule && byId.has(ride.schedule)) {
+      byId.get(ride.schedule)!.push(ride);
+    } else {
+      ghost.push(ride);
+    }
+  }
+
+  const groups: ScheduleGroup[] = schedules
+    .map(s => ({ schedule: s, rides: byId.get(s.id) ?? [] }))
+    .filter(g => g.rides.length > 0);
+
+  if (ghost.length > 0) groups.push({ schedule: null, rides: ghost });
+  return groups;
+}
+
+function ScheduleGroupHeader({ schedule }: { schedule: ClubSchedule | null }) {
+  if (!schedule) {
+    return (
+      <div className="flex items-center gap-3">
+        <span
+          className="px-3 py-1 rounded-full text-xs font-black"
+          style={{
+            backgroundColor: 'white',
+            border:          '2px dashed var(--ink-soft)',
+            color:           'var(--ink-soft)',
+          }}
+        >
+          —
+        </span>
+        <p className="font-heading font-black text-sm text-ink-soft uppercase tracking-wide">
+          No schedule
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        className="px-3 py-1 rounded-full text-xs font-black"
+        style={{
+          backgroundColor: 'var(--amber)',
+          border:          '2px solid var(--ink)',
+          boxShadow:       '2px 2px 0px var(--ink)',
+          color:           'var(--ink)',
+        }}
+      >
+        {schedule.label}
+      </span>
+      <p className="font-heading font-black text-sm text-ink uppercase tracking-wide">
+        {DAY_NAMES[schedule.day_of_week]} · {schedule.time}
+      </p>
+    </div>
+  );
+}
+
+function RideCard({ ride, slug, index }: { ride: Route; slug: string; index: number }) {
+  return (
+    <Link
+      href={`/clubs/${slug}/rides/${ride.id}`}
+      className="card p-5 flex items-center gap-5 card-link"
+      style={{ textDecoration: 'none' }}
+    >
+      <div
+        className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center font-heading font-black text-lg"
+        style={{
+          backgroundColor: PALETTE[index % PALETTE.length],
+          border:    '2px solid var(--ink)',
+          boxShadow: '3px 3px 0px var(--ink)',
+          color:     'var(--ink)',
+        }}
+        aria-hidden="true"
+      >
+        🚴
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <p className="font-heading font-black text-ink text-base leading-snug truncate">
+          {ride.name}
+        </p>
+        <p className="text-ink-soft text-sm mt-0.5">
+          {formatDate(ride.date)} · {formatTime(ride.date)} · {ride.distance_km} km · {ride.elevation_m} m ↑
+        </p>
+      </div>
+
+      <span
+        className="badge-neutral shrink-0 capitalize"
+        style={ride.status === 'confirmed' ? {
+          backgroundColor: 'color-mix(in srgb, var(--mint), white 80%)',
+          borderColor:     'var(--mint)',
+          color:           'color-mix(in srgb, var(--mint), black 40%)',
+        } : undefined}
+      >
+        {ride.status}
+      </span>
+    </Link>
+  );
 }
 
 export default async function ClubPage({
@@ -90,6 +200,13 @@ export default async function ClubPage({
     filter: `club = "${club.id}" && status != "cancelled"`,
     sort:   'date',
   }).catch(() => []);
+
+  const schedules = club.schedules_enabled
+    ? await pb.collection('club_schedules').getFullList<ClubSchedule>({
+        filter: `club = "${club.id}"`,
+        sort:   'day_of_week,time',
+      }).catch(() => [])
+    : [];
 
   const accent = clubAccent(club.id);
 
@@ -258,49 +375,23 @@ export default async function ClubPage({
               </p>
             )}
           </div>
+        ) : club.schedules_enabled ? (
+          <div className="space-y-6">
+            {buildScheduleGroups(schedules, rides).map(group => (
+              <div key={group.schedule?.id ?? 'ghost'}>
+                <ScheduleGroupHeader schedule={group.schedule} />
+                <div className="space-y-3 mt-3">
+                  {group.rides.map((ride, i) => (
+                    <RideCard key={ride.id} ride={ride} slug={slug} index={i} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-3">
             {rides.map((ride, i) => (
-              <Link
-                key={ride.id}
-                href={`/clubs/${slug}/rides/${ride.id}`}
-                className="card p-5 flex items-center gap-5 card-link"
-                style={{ textDecoration: 'none' }}
-              >
-                {/* Color dot */}
-                <div
-                  className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center font-heading font-black text-lg"
-                  style={{
-                    backgroundColor: PALETTE[i % PALETTE.length],
-                    border:    '2px solid var(--ink)',
-                    boxShadow: '3px 3px 0px var(--ink)',
-                    color:     'var(--ink)',
-                  }}
-                  aria-hidden="true"
-                >
-                  🚴
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-heading font-black text-ink text-base leading-snug truncate">
-                    {ride.name}
-                  </p>
-                  <p className="text-ink-soft text-sm mt-0.5">
-                    {formatDate(ride.date)} · {formatTime(ride.date)} · {ride.distance_km} km · {ride.elevation_m} m ↑
-                  </p>
-                </div>
-
-                <span
-                  className="badge-neutral shrink-0 capitalize"
-                  style={ride.status === 'confirmed' ? {
-                    backgroundColor: 'color-mix(in srgb, var(--mint), white 80%)',
-                    borderColor:     'var(--mint)',
-                    color:           'color-mix(in srgb, var(--mint), black 40%)',
-                  } : undefined}
-                >
-                  {ride.status}
-                </span>
-              </Link>
+              <RideCard key={ride.id} ride={ride} slug={slug} index={i} />
             ))}
           </div>
         )}

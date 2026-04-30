@@ -1,8 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
-import type { Club, Route } from '@/lib/types';
+import type { Club, ClubMember, Route } from '@/lib/types';
 import RideMapClient from './ride-map-client';
+import { DeleteRideButton } from './delete-ride-button';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -49,6 +50,11 @@ export default async function RideDetailPage({
   }
 
   if (ride.club !== club.id) notFound();
+
+  const isCaptain = await pb.collection('club_members')
+    .getFirstListItem<ClubMember>(`club = "${club.id}" && user = "${user.id}" && role = "captain"`)
+    .then(() => true)
+    .catch(() => false);
 
   const statusStyle = STATUS_STYLES[ride.status] ?? STATUS_STYLES['proposed'];
 
@@ -123,6 +129,12 @@ export default async function RideDetailPage({
             <p className="field-label">Surface</p>
             <p className="text-ink font-bold capitalize">{ride.surface}</p>
           </div>
+
+          {isCaptain && (
+            <div className="pt-2">
+              <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
+            </div>
+          )}
 
         </div>
       </div>

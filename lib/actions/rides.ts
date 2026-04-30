@@ -41,6 +41,7 @@ export async function saveRide(
   const distanceKm  = parseFloat(form.get('distanceKm')  as string);
   const elevationM  = parseFloat(form.get('elevationM')  as string);
   const coordinates = JSON.parse(form.get('coordinates') as string) as [number, number][];
+  const scheduleId  = (form.get('scheduleId') as string | null) ?? '';
 
   if (!name)              return 'Give the ride a name.';
   if (!date)              return 'Pick a date.';
@@ -69,11 +70,37 @@ export async function saveRide(
       surface:     'road',
       coordinates,
       status:      'proposed',
+      schedule:    scheduleId,
     });
   } catch (err) {
     console.error('[saveRide]', err);
     return 'Failed to save ride. Please try again.';
   }
+
+  redirect(`/clubs/${slug}`);
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+
+export async function deleteRide(form: FormData): Promise<void> {
+  const rideId = form.get('rideId') as string;
+  const slug   = form.get('slug')   as string;
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const ride = await pb.collection('routes').getOne(rideId).catch(() => null);
+  if (!ride) redirect(`/clubs/${slug}`);
+
+  const captain = await pb.collection('club_members')
+    .getFirstListItem(`club = "${ride!['club']}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!captain) redirect(`/clubs/${slug}/rides/${rideId}`);
+
+  await pb.collection('routes').delete(rideId).catch(() => null);
 
   redirect(`/clubs/${slug}`);
 }

@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { RidePlanner } from './ride-planner';
-import type { Club, ClubMember } from '@/lib/types';
+import type { Club, ClubMember, ClubSchedule } from '@/lib/types';
 
 export default async function NewRidePage({
   params,
@@ -30,5 +30,19 @@ export default async function NewRidePage({
 
   if (!membership) redirect(`/clubs/${slug}`);
 
-  return <RidePlanner clubId={club.id} slug={slug} clubName={club.name} />;
+  const schedules = club.schedules_enabled
+    ? await pb.collection('club_schedules').getFullList<ClubSchedule>({
+        filter: `club = "${club.id}"`,
+        sort:   'day_of_week,time',
+      }).catch(() => [])
+    : [];
+
+  return (
+    <RidePlanner
+      clubId={club.id}
+      slug={slug}
+      clubName={club.name}
+      schedules={schedules}
+    />
+  );
 }

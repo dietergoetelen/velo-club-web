@@ -6,6 +6,10 @@
     "004_user_relation_fields.ts",
     "004_club_unique_name.ts",
     "005_club_avatar.ts",
-    "006_user_avatar.ts"
+    "006_user_avatar.ts",
+    "007_club_schedules_enabled.ts",
+    "008_club_schedules.ts",
+    "009_route_schedule_fk.ts",
+    "010_day_of_week_optional.ts"
   ]
 }

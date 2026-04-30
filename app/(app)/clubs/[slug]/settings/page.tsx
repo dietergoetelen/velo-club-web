@@ -2,7 +2,8 @@ import { notFound, redirect } from 'next/navigation';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { SettingsForm } from './settings-form';
-import type { Club, ClubMember } from '@/lib/types';
+import { SchedulesSection } from './schedules-section';
+import type { Club, ClubMember, ClubSchedule } from '@/lib/types';
 
 export default async function ClubSettingsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -24,10 +25,17 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
 
   if (!membership) redirect(`/clubs/${slug}`);
 
-  return (
-    <div className="max-w-lg mx-auto">
+  const schedules = club.schedules_enabled
+    ? await pb.collection('club_schedules').getFullList<ClubSchedule>({
+        filter: `club = "${club.id}"`,
+        sort:   'day_of_week,time',
+      }).catch(() => [])
+    : [];
 
-      <div className="mb-8">
+  return (
+    <div className="max-w-lg mx-auto space-y-8">
+
+      <div>
         <p className="eyebrow mb-2">Settings</p>
         <h1 className="font-heading font-black text-4xl text-ink tracking-tight">
           {club.name}
@@ -39,6 +47,10 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
         club={club}
         avatarUrl={club.avatar ? fileUrl('clubs', club.id, club.avatar, '400x400') : undefined}
       />
+
+      {club.schedules_enabled && (
+        <SchedulesSection clubId={club.id} slug={slug} schedules={schedules} />
+      )}
     </div>
   );
 }
