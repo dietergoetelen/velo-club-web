@@ -32,10 +32,11 @@ export function ProfileForm({
         <div>
           <label className="field-label">Name</label>
           <input
-            name="name" type="text" required
+            type="text" disabled
             defaultValue={name}
-            className="field-input"
+            className="field-input opacity-60 cursor-not-allowed"
           />
+          <p className="text-xs text-ink-soft mt-1.5">Your name can&apos;t be changed.</p>
         </div>
 
         <div>

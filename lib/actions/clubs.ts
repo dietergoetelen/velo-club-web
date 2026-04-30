@@ -9,6 +9,8 @@ function slugify(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
 
+const MAX_CLUBS_PER_CAPTAIN = 10;
+
 export async function createClub(
   _prev: string | null,
   form: FormData,
@@ -25,6 +27,14 @@ export async function createClub(
 
   const pb   = getPBWithToken(token);
   const slug = slugify(name);
+
+  const captainCount = await pb.collection('club_members')
+    .getList(1, 1, { filter: `user = "${user.id}" && role = "captain"` })
+    .then(r => r.totalItems)
+    .catch(() => 0);
+  if (captainCount >= MAX_CLUBS_PER_CAPTAIN) {
+    return `You can captain at most ${MAX_CLUBS_PER_CAPTAIN} clubs.`;
+  }
 
   const existing = await pb.collection('clubs')
     .getFirstListItem(`slug = "${slug}"`)
