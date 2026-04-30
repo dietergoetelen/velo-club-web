@@ -1,0 +1,8 @@
+2026/04/30 12:48:01 Server started at http://127.0.0.1:8090
+├─ REST API:  http://127.0.0.1:8090/api/
+└─ Dashboard: http://127.0.0.1:8090/_/
+
+(!) Launch the URL below in the browser if it hasn't been open already to create your first superuser account:
+http://127.0.0.1:8090/_/#/pbinstal/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJwYmNfMzE0MjYzNTgyMyIsImV4cCI6MTc3NzU0Nzg4MSwiaWQiOiJqZzNsMWY5YTd3ZnBsbzciLCJyZWZyZXNoYWJsZSI6ZmFsc2UsInR5cGUiOiJhdXRoIn0.QjYs5UZxKMU6A6btxb9gDLh_JsRA4P91EGywtZiHGX0
+(you can also create your first superuser by running: /home/dieter/dev/vnext/pocketbase/data/pocketbase superuser upsert EMAIL PASS)
+
