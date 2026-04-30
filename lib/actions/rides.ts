@@ -1,0 +1,79 @@
+'use server';
+
+import { redirect } from 'next/navigation';
+import { getToken, getCurrentUser } from '@/lib/session';
+import { getPBWithToken } from '@/lib/pocketbase';
+import { fetchThreeRoutes } from '@/lib/graphhopper';
+import type { RideRoute } from '@/lib/types';
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+
+export type GenerateResult =
+  | { ok: true;  routes: RideRoute[] }
+  | { ok: false; error: string };
+
+export async function generateRoutes(
+  lat:        number,
+  lng:        number,
+  distanceKm: number,
+): Promise<GenerateResult> {
+  try {
+    const routes = await fetchThreeRoutes(lat, lng, distanceKm);
+    return { ok: true, routes };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[generateRoutes]', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+
+export async function saveRide(
+  _prev: string | null,
+  form:  FormData,
+): Promise<string | null> {
+  const clubId      = form.get('clubId')      as string;
+  const slug        = form.get('slug')        as string;
+  const name        = (form.get('name')       as string).trim();
+  const date        = form.get('date')        as string;
+  const time        = form.get('time')        as string;
+  const distanceKm  = parseFloat(form.get('distanceKm')  as string);
+  const elevationM  = parseFloat(form.get('elevationM')  as string);
+  const coordinates = JSON.parse(form.get('coordinates') as string) as [number, number][];
+
+  if (!name)              return 'Give the ride a name.';
+  if (!date)              return 'Pick a date.';
+  if (!time)              return 'Pick a start time.';
+  if (!coordinates?.length) return 'No route selected.';
+
+  const token = await getToken();
+  const user  = await getCurrentUser();
+  if (!token || !user) redirect('/login');
+
+  const pb = getPBWithToken(token);
+
+  const membership = await pb.collection('club_members')
+    .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
+    .catch(() => null);
+  if (!membership) return 'Only the captain can plan rides.';
+
+  try {
+    await pb.collection('routes').create({
+      club:        clubId,
+      created_by:  user.id,
+      name,
+      date:        `${date} ${time}:00.000Z`,
+      distance_km: distanceKm,
+      elevation_m: elevationM,
+      surface:     'road',
+      coordinates,
+      status:      'proposed',
+    });
+  } catch (err) {
+    console.error('[saveRide]', err);
+    return 'Failed to save ride. Please try again.';
+  }
+
+  redirect(`/clubs/${slug}`);
+}

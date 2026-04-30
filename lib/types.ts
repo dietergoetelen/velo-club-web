@@ -52,3 +52,14 @@ export interface Attendance extends PBRecord {
   route: string; // relation → Route.id
   user:  string; // relation → PB user id
 }
+
+// ── Route planner ─────────────────────────────────────────────────────────────
+
+export interface RideRoute {
+  id:          'a' | 'b' | 'c';
+  label:       string;
+  color:       string;
+  distance:    number;              // km, 1 decimal
+  elevation:   number;              // m, integer
+  coordinates: [number, number][];  // [lat, lng] — Leaflet order
+}
