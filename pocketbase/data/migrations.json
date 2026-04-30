@@ -1,0 +1,6 @@
+{
+  "applied": [
+    "001_initial_schema.ts",
+    "002_add_join_requests.ts"
+  ]
+}

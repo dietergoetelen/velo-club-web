@@ -73,7 +73,8 @@ export async function requestToJoin(
       user_email: user.email,
       status:     'pending',
     });
-  } catch {
+  } catch (err) {
+    console.error('[requestToJoin]', err);
     return 'Failed to send request. Please try again.';
   }
 

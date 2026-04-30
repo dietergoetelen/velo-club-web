@@ -3,10 +3,10 @@
 # Data is stored in ./pocketbase/data/
 #
 # Usage:
-#   bash pocketbase/pocketbase.sh          # start
-#   bash pocketbase/pocketbase.sh stop     # stop
-#   bash pocketbase/pocketbase.sh logs     # tail logs
-#   bash pocketbase/pocketbase.sh setup    # create collections (run once after first start)
+#   bash pocketbase/pocketbase.sh           # start
+#   bash pocketbase/pocketbase.sh stop      # stop
+#   bash pocketbase/pocketbase.sh logs      # tail logs
+#   bash pocketbase/pocketbase.sh migrate   # apply pending migrations
 
 set -euo pipefail
 
@@ -33,10 +33,12 @@ _stop() {
 case "$CMD" in
   stop)  _stop; exit 0 ;;
   logs)  tail -f "$LOG_FILE"; exit 0 ;;
-  setup)
-    echo "Running collection setup…"
-    cd "$(dirname "$DIR")"
-    npx tsx pocketbase/setup.ts
+  migrate)
+    echo "Running migrations…"
+    ROOT="$(dirname "$DIR")"
+    cd "$ROOT"
+    set -a; [ -f .env.local ] && source .env.local; set +a
+    npx tsx pocketbase/migrate.ts
     exit 0
     ;;
 esac
@@ -65,4 +67,4 @@ nohup "$BIN" serve \
 echo $! > "$PID_FILE"
 echo "Started (PID $!)"
 echo "Admin UI → http://localhost:8090/_/"
-echo "Run 'bash pocketbase/pocketbase.sh setup' after first-time setup to create collections."
+echo "Run 'bash pocketbase/pocketbase.sh migrate' to apply schema migrations."
