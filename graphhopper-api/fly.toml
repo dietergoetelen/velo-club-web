@@ -12,6 +12,10 @@ primary_region = 'ams'
   source = 'data'
   destination = '/graphhopper/data'
 
+[[mounts]]
+  source = 'graphhopper-cache'
+  destination = '/graphhopper/graphhopper-cache'
+
 [http_service]
   internal_port = 8989
   force_https = true
