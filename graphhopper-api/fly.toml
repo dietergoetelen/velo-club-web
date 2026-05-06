@@ -13,7 +13,7 @@ primary_region = 'ams'
   destination = '/graphhopper/data'
 
 [[mounts]]
-  source = 'graphhopper-cache'
+  source = 'graphhopper_cache'
   destination = '/graphhopper/graphhopper-cache'
 
 [http_service]
