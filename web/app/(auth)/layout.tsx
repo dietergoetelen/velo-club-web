@@ -57,7 +57,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Content */}
         <p className="font-heading font-black text-2xl text-white relative z-10 tracking-tight">
-          Velo<span style={{ color: 'var(--amber)' }}>Club</span>
+          Pace<span style={{ color: 'var(--amber)' }}>line</span>
         </p>
 
         <div className="relative z-10">
@@ -71,7 +71,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <p className="text-xs relative z-10" style={{ color: 'rgba(255,255,255,0.18)' }}>
-          © 2025 VeloClub
+          © {new Date().getFullYear()} Paceline
         </p>
       </div>
 
@@ -81,7 +81,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           {/* Mobile wordmark */}
           <div className="text-center mb-10 lg:hidden">
             <p className="font-heading font-black text-3xl text-ink">
-              Velo<span className="text-accent">Club</span>
+              Pace<span className="text-accent">line</span>
             </p>
           </div>
           {children}

@@ -26,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <Link href="/dashboard" className="flex items-center gap-2 select-none">
             <span className="font-heading font-black text-xl text-white tracking-tight">
-              Velo<span className="text-amber">Club</span>
+              Pace<span className="text-amber">line</span>
             </span>
             <span
               className="w-2.5 h-2.5 rounded-full bg-pink"
