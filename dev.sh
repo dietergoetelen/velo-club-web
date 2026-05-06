@@ -23,7 +23,7 @@ GH_NAME=graphhopper
 GH_IMAGE=vnext-graphhopper
 GH_CTX="$DIR/graphhopper-api"
 GH_DATA="$DIR/graphhopper-api/data"
-GH_CACHE="$DIR/graphhopper-api/graphhopper-cache"
+GH_CACHE="$DIR/graphhopper-api/graphhopper_cache"
 
 _running() { [ -n "$(podman ps     --quiet --filter "name=^${1}$" 2>/dev/null)" ]; }
 _exists()  { [ -n "$(podman ps -a  --quiet --filter "name=^${1}$" 2>/dev/null)" ]; }
@@ -63,7 +63,7 @@ _start_graphhopper() {
     -p 8989:8989 \
     -p 8990:8990 \
     -v "$GH_DATA:/graphhopper/data:Z" \
-    -v "$GH_CACHE:/graphhopper/graphhopper-cache:Z" \
+    -v "$GH_CACHE:/graphhopper/graphhopper_cache:Z" \
     --restart unless-stopped \
     "$GH_IMAGE" >/dev/null
 }

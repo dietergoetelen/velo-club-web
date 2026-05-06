@@ -6,7 +6,7 @@ services:
       - "8990:8990"
     volumes:
       - ./data:/graphhopper/data:Z
-      - ./graphhopper-cache:/graphhopper/graphhopper-cache:Z
+      - ./graphhopper_cache:/graphhopper/graphhopper_cache:Z
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8989/health"]

@@ -1,6 +1,6 @@
 graphhopper:
   datareader.file: data/benelux-latest.osm.pbf
-  graph.location: graphhopper-cache
+  graph.location: graphhopper_cache
 
   import.osm.ignored_highways: motorway,trunk
 

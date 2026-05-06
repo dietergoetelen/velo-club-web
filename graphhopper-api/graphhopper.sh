@@ -21,7 +21,7 @@ BE_PBF="$DIR/data/belgium-latest.osm.pbf"
 NL_PBF="$DIR/data/netherlands-latest.osm.pbf"
 LU_PBF="$DIR/data/luxembourg-latest.osm.pbf"
 # graph.location in config.yml is relative to $DIR (the JVM cwd), not data/.
-CACHE_DIR="$DIR/graphhopper-cache"
+CACHE_DIR="$DIR/graphhopper_cache"
 
 mkdir -p "$DIR/data"
 
