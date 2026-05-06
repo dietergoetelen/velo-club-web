@@ -1,0 +1,7 @@
+{
+  "priority": [
+    {"if": "surface == GRAVEL || surface == FINE_GRAVEL || surface == COMPACTED", "multiply_by": "1.5"},
+    {"if": "surface == DIRT || surface == GROUND || surface == GRASS", "multiply_by": "1.2"},
+    {"if": "surface == ASPHALT || surface == PAVED || surface == CONCRETE", "multiply_by": "0.6"}
+  ]
+}

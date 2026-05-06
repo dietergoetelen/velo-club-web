@@ -1,0 +1,8 @@
+{
+  "priority": [
+    {"if": "bike_network == LOCAL",         "multiply_by": "2.0"},
+    {"if": "bike_network == REGIONAL",      "multiply_by": "1.5"},
+    {"if": "bike_network == NATIONAL",      "multiply_by": "1.2"},
+    {"if": "bike_network == INTERNATIONAL", "multiply_by": "1.0"}
+  ]
+}

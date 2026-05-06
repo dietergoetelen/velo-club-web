@@ -1,0 +1,70 @@
+graphhopper:
+  datareader.file: data/benelux-latest.osm.pbf
+  graph.location: graphhopper-cache
+
+  import.osm.ignored_highways: motorway,trunk
+
+  profiles:
+    - name: bike
+      custom_model_files: [bike.json, bike_network.json]
+    - name: bike_road
+      custom_model_files: [bike.json, bike_network.json, bike_road.json]
+    - name: bike_gravel
+      custom_model_files: [bike.json, bike_network.json, bike_gravel.json]
+    # Road profile with a U-turn penalty for the round_trip planner.
+    # NOT in profiles_lm — LM in GH 11 doesn't support turn costs, and
+    # round_trip is flexible-only (ch.disable=true) anyway.
+    #
+    # GH's bundled bike_tc.json warns: "not recommended to increase these
+    # costs heavily as otherwise larger, bike-unfriendly roads will be
+    # preferred as they often require less turns." GH's own example uses 20.
+    # 60s (1 min) is enough to discourage lollipop spurs without pushing
+    # routes onto main roads. Bump to 90 if needed; avoid going above ~120.
+    - name: road_bike
+      custom_model_files: [bike.json, bike_network.json, road_bike.json]
+      turn_costs:
+        u_turn_costs: 60
+        vehicle_types: [bicycle]
+
+    # ── A/B test profiles for U-turn evaluation ────────────────────────────
+    # Both pair racingbike.json with bike_elevation.json (slope-aware speeds)
+    # — the setup recommended by racingbike.json's own comment.
+    #   - racingbike            — bundled racing + elevation
+    #   - racingbike_avoid_turns — racing + elevation + avoid_turns (U-turns
+    #                              cost Infinity per its else clause)
+    - name: racingbike
+      custom_model_files: [racingbike.json, bike_elevation.json]
+    - name: racingbike_avoid_turns
+      custom_model_files: [racingbike.json, avoid_turns.json, bike_elevation.json]
+      turn_costs:
+        u_turn_costs: 60
+        vehicle_types: [bicycle]
+
+  profiles_lm:
+    - profile: bike
+    - profile: bike_road
+    - profile: bike_gravel
+
+  # All values the custom models reference must be listed explicitly. GH was
+  # previously auto-injecting road_environment/max_speed/smoothness; once we
+  # added the road_bike profile, GH requires them spelled out.
+  # `orientation` needed by avoid_turns.json (change_angle uses it internally).
+  # `average_slope` needed by bike_elevation.json (slope-aware speed limits).
+  graph.encoded_values: bike_priority, bike_access, roundabout, bike_average_speed, bike_road_access, foot_road_access, mtb_rating, hike_rating, country, road_class, surface, bike_network, track_type, road_access, road_environment, max_speed, smoothness, racingbike_priority, racingbike_access, racingbike_average_speed, orientation, average_slope
+
+  # SRTM elevation data — required for average_slope.
+  # First import will download SRTM tiles (~1-2 GB cached for Benelux).
+  graph.elevation.provider: srtm
+
+  graph.dataaccess.default_type: MMAP
+
+# Server config must be at root level (dropwizard convention, not under graphhopper)
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+  admin_connectors:
+    - type: http
+      port: 8990
+  request_log:
+    appenders: []

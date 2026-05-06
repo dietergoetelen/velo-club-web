@@ -1,0 +1,36 @@
+app            = "vnext-graphhopper"
+primary_region = "ams"
+
+[build]
+
+# OSM PBF lives here (downloaded on first boot or seeded manually).
+[[mounts]]
+  source      = "graphhopper_data"
+  destination = "/graphhopper/data"
+
+# Built graph cache — multi-GB, expensive to rebuild, so keep it on a volume.
+[[mounts]]
+  source      = "graphhopper_cache"
+  destination = "/graphhopper/graphhopper-cache"
+
+# Internal-only: no [[services.ports]] block means no public listener.
+# Web app reaches it at vnext-graphhopper.internal:8989.
+[[services]]
+  internal_port        = 8989
+  protocol             = "tcp"
+  auto_stop_machines   = "off"
+  auto_start_machines  = true
+  min_machines_running = 1
+
+# With MMAP data access (config.yml) the graph lives in mmapped files; JVM
+# heap stays small (Dockerfile uses -Xmx1500m). Remaining RAM works as OS
+# page cache for the graph files.
+#
+# Note: the *initial* graph build from the OSM PBF is more memory-hungry
+# than steady-state serving. If first-boot import OOMs, scale up
+# temporarily (`fly scale memory 4096`), wait for the build to finish, then
+# scale back down.
+[[vm]]
+  memory   = "2gb"
+  cpu_kind = "shared"
+  cpus     = 2

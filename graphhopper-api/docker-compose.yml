@@ -1,0 +1,16 @@
+services:
+  graphhopper:
+    build: .
+    ports:
+      - "8989:8989"
+      - "8990:8990"
+    volumes:
+      - ./data:/graphhopper/data:Z
+      - ./graphhopper-cache:/graphhopper/graphhopper-cache:Z
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8989/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 1800s  # Benelux graph build can take up to ~25 min

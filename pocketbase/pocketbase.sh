@@ -3,10 +3,9 @@
 # Data is stored in ./pocketbase/data/
 #
 # Usage:
-#   bash pocketbase/pocketbase.sh           # start
+#   bash pocketbase/pocketbase.sh           # start (auto-applies pb_migrations on boot)
 #   bash pocketbase/pocketbase.sh stop      # stop
 #   bash pocketbase/pocketbase.sh logs      # tail logs
-#   bash pocketbase/pocketbase.sh migrate   # apply pending migrations
 
 set -euo pipefail
 
@@ -33,14 +32,6 @@ _stop() {
 case "$CMD" in
   stop)  _stop; exit 0 ;;
   logs)  tail -f "$LOG_FILE"; exit 0 ;;
-  migrate)
-    echo "Running migrations…"
-    ROOT="$(dirname "$DIR")"
-    cd "$ROOT"
-    set -a; [ -f .env.local ] && source .env.local; set +a
-    npx tsx pocketbase/migrate.ts
-    exit 0
-    ;;
 esac
 
 # Download binary if needed
