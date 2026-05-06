@@ -1,23 +1,26 @@
-app            = "vnext-pocketbase"
-primary_region = "ams"
+# fly.toml app configuration file generated for paceline-pb on 2026-05-06T06:32:43Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'paceline-pb'
+primary_region = 'ams'
 
 [build]
 
 [[mounts]]
-  source      = "pb_data"
-  destination = "/pb/pb_data"
+  source = 'pb_data'
+  destination = '/pb/pb_data'
 
-# Public HTTPS edge for the admin UI (`/_/`) and direct API access.
-# Internal traffic from the web app uses vnext-pocketbase.internal:8090
-# regardless of this block.
 [http_service]
-  internal_port        = 8090
-  force_https          = true
-  auto_stop_machines   = "off"
-  auto_start_machines  = true
+  internal_port = 8090
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
   min_machines_running = 1
 
 [[vm]]
-  memory   = "512mb"
-  cpu_kind = "shared"
-  cpus     = 1
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
