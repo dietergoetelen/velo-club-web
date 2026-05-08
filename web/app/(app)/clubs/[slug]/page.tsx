@@ -444,48 +444,80 @@ export default async function ClubPage({
             {members.length}
           </span>
         </div>
-        <div className="card overflow-hidden">
-          {members.map((m, i) => (
-            <div
-              key={m.id}
-              className="flex items-center justify-between px-6 py-4 gap-4"
-              style={i !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black shrink-0"
-                  style={{
-                    backgroundColor: AVATAR_COLORS[i % AVATAR_COLORS.length],
-                    border:    '2px solid var(--ink)',
-                    boxShadow: '2px 2px 0px var(--ink)',
-                    color:     'var(--ink)',
-                  }}
-                >
-                  {getInitials(usersById[m.user]?.name || usersById[m.user]?.username || '?')}
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-ink">{usersById[m.user]?.name || usersById[m.user]?.username}</p>
-                  <p className="text-xs text-ink-soft mt-0.5">{usersById[m.user]?.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {m.role === 'captain'
-                  ? <span className="badge-brand">captain</span>
-                  : <span className="badge-neutral">member</span>
-                }
-                {isCaptain && m.role !== 'captain' && m.user !== user.id && (
-                  <form action={promoteToCaptain}>
-                    <input type="hidden" name="memberId" value={m.id} />
-                    <input type="hidden" name="clubId"   value={club.id} />
-                    <input type="hidden" name="slug"     value={slug} />
-                    <button type="submit" className="btn-secondary text-xs px-3 py-1.5">
-                      Make captain
-                    </button>
-                  </form>
-                )}
-              </div>
-            </div>
-          ))}
+        <div className="card p-6">
+          <ul className="flex flex-wrap gap-5">
+            {members.map((m, i) => {
+              const u             = usersById[m.user];
+              const displayName   = u?.name || u?.username || u?.email || 'Member';
+              const isThisCaptain = m.role === 'captain';
+              const canPromote    = isCaptain && !isThisCaptain && m.user !== user.id;
+
+              return (
+                <li key={m.id} className="relative group">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black overflow-hidden shrink-0 transition-transform group-hover:-translate-y-0.5"
+                    style={{
+                      backgroundColor: u?.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
+                      border:    '2px solid var(--ink)',
+                      boxShadow: isThisCaptain
+                        ? '3px 3px 0px var(--amber), 5px 5px 0px var(--ink)'
+                        : '2px 2px 0px var(--ink)',
+                      color:     'var(--ink)',
+                    }}
+                  >
+                    {u?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fileUrl('users', m.user, u.avatar, '100x100')}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getInitials(displayName)
+                    )}
+                  </div>
+
+                  {isThisCaptain && (
+                    <span
+                      aria-label="Captain"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black pointer-events-none"
+                      style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
+                    >
+                      ★
+                    </span>
+                  )}
+
+                  <div
+                    className="absolute left-1/2 top-full -translate-x-1/2 pt-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
+                  >
+                    <div
+                      className="px-2.5 py-1 rounded text-xs font-bold text-white whitespace-nowrap"
+                      style={{ backgroundColor: 'var(--ink)' }}
+                    >
+                      {displayName}
+                      {isThisCaptain && (
+                        <span className="ml-1.5" style={{ color: 'var(--amber)' }}>· captain</span>
+                      )}
+                    </div>
+                    {canPromote && (
+                      <form action={promoteToCaptain} className="mt-1.5 flex justify-center">
+                        <input type="hidden" name="memberId" value={m.id} />
+                        <input type="hidden" name="clubId"   value={club.id} />
+                        <input type="hidden" name="slug"     value={slug} />
+                        <button
+                          type="submit"
+                          className="px-2.5 py-1 rounded text-[11px] font-black whitespace-nowrap"
+                          style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
+                        >
+                          ★ Make captain
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </section>
 
