@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-const COLLAPSED_PX = 280;
+const COLLAPSED_PX = 140;
 
 export function ClubIntro({ markdown }: { markdown: string }) {
   const [expanded,    setExpanded]    = useState(false);
@@ -19,7 +19,6 @@ export function ClubIntro({ markdown }: { markdown: string }) {
 
   return (
     <section>
-      <p className="eyebrow mb-4">About</p>
       <div className="card p-6">
         <div className="relative">
           <div

@@ -225,9 +225,9 @@ body {
     @apply text-base leading-relaxed;
     color: var(--ink);
 
-    h1 { @apply font-heading font-black text-2xl tracking-tight mt-5 mb-2; }
-    h2 { @apply font-heading font-black text-xl  tracking-tight mt-5 mb-2; }
-    h3 { @apply font-heading font-black text-lg  tracking-tight mt-4 mb-1.5; }
+    h1 { @apply font-heading font-bold text-xl  tracking-tight mt-5 mb-2; }
+    h2 { @apply font-heading font-bold text-lg  tracking-tight mt-5 mb-2; }
+    h3 { @apply font-heading font-semibold text-base tracking-tight mt-4 mb-1.5; }
 
     p { @apply mb-3; }
 
