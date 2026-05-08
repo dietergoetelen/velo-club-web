@@ -18,35 +18,33 @@ export function ClubIntro({ markdown }: { markdown: string }) {
   }, [markdown]);
 
   return (
-    <section>
-      <div className="card p-6">
-        <div className="relative">
-          <div
-            ref={ref}
-            className="markdown-body overflow-hidden transition-[max-height] duration-300 ease-out"
-            style={{ maxHeight: expanded ? '4000px' : `${COLLAPSED_PX}px` }}
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
-          </div>
-          {!expanded && needsToggle && (
-            <div
-              aria-hidden="true"
-              className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
-              style={{ background: 'linear-gradient(to bottom, transparent, white)' }}
-            />
-          )}
+    <div className="mt-3">
+      <div className="relative">
+        <div
+          ref={ref}
+          className="markdown-body markdown-soft overflow-hidden transition-[max-height] duration-300 ease-out"
+          style={{ maxHeight: expanded ? '4000px' : `${COLLAPSED_PX}px` }}
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
         </div>
-        {needsToggle && (
-          <button
-            type="button"
-            onClick={() => setExpanded(e => !e)}
-            className="mt-3 text-xs font-black uppercase tracking-[0.12em] hover:underline"
-            style={{ color: 'var(--accent)' }}
-          >
-            {expanded ? 'Show less ↑' : 'Show more ↓'}
-          </button>
+        {!expanded && needsToggle && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
+            style={{ background: 'linear-gradient(to bottom, transparent, var(--paper))' }}
+          />
         )}
       </div>
-    </section>
+      {needsToggle && (
+        <button
+          type="button"
+          onClick={() => setExpanded(e => !e)}
+          className="mt-2 text-xs font-bold uppercase tracking-[0.12em] hover:underline"
+          style={{ color: 'var(--accent)' }}
+        >
+          {expanded ? 'Show less ↑' : 'Show more ↓'}
+        </button>
+      )}
+    </div>
   );
 }

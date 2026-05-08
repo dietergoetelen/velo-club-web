@@ -276,6 +276,9 @@ export default async function ClubPage({
             <h1 className="font-heading font-black text-4xl md:text-5xl text-ink tracking-tight leading-[1.1]">
               {club.name}
             </h1>
+            {club.description && club.description.trim() && (
+              <ClubIntro markdown={club.description} />
+            )}
             <div className="mt-5 flex gap-2 flex-wrap">
               {isCaptain && <span className="badge-brand">captain</span>}
               {isMember && !isCaptain && <span className="badge-neutral">member</span>}
@@ -352,11 +355,6 @@ export default async function ClubPage({
             ))}
           </div>
         </section>
-      )}
-
-      {/* ── About / intro ──────────────────────────────────────────────── */}
-      {club.description && club.description.trim() && (
-        <ClubIntro markdown={club.description} />
       )}
 
       {/* ── Upcoming rides ─────────────────────────────────────────────── */}

@@ -281,4 +281,9 @@ body {
     > :last-child  { margin-bottom: 0 !important; }
   }
 
+  /* Softer variant — body copy in ink-soft, used inline below the club title. */
+  .markdown-soft {
+    color: var(--ink-soft);
+  }
+
 }
