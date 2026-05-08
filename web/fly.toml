@@ -11,6 +11,7 @@ primary_region = 'ams'
 [env]
   GRAPHHOPPER_URL = 'http://paceline-graphhopper.internal:8989'
   POCKETBASE_URL = 'http://paceline-pb.internal:8090'
+  POCKETBASE_PUBLIC_URL = 'https://paceline-pocketbase.fly.dev'
 
 [http_service]
   internal_port = 3000
