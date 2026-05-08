@@ -13,7 +13,7 @@ export default function RegisterPage() {
         Create account
       </h1>
       <p className="text-ink-soft text-sm mb-8">
-        Join Paceline and find your crew.
+        Join Zoesh and find your crew.
       </p>
 
       <form action={action} className="space-y-4">

@@ -17,7 +17,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title:       'Paceline',
+  title:       'Zoesh',
   description: 'Your cycling club, organised.',
 };
 

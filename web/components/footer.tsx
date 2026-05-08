@@ -35,7 +35,7 @@ export function Footer() {
           <div>
             <Link href="/dashboard" className="inline-flex items-center gap-2 select-none">
               <span className="font-heading font-black text-2xl tracking-tight">
-                Pace<span className="text-amber">line</span>
+                Zoe<span className="text-amber">sh</span>
               </span>
               <span
                 className="w-3 h-3 rounded-full bg-pink"
@@ -71,7 +71,7 @@ export function Footer() {
           style={{ borderTop: '2px dashed rgba(255,255,255,0.25)' }}
         >
           <p className="text-xs text-white/55">
-            © {new Date().getFullYear()} Paceline · Made with two wheels and a tailwind.
+            © {new Date().getFullYear()} Zoesh · Made with two wheels and a tailwind.
           </p>
         </div>
 
