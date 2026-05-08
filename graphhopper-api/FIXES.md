@@ -83,3 +83,4 @@ GET /route?point=51.25,4.98
 - Post-filter candidates: discard any route where the same edge appears twice in opposite direction within the first or last 500 m, or where duplicated length > 5 % of total.
 
 With the nested `turn_costs` block, hard surface blocks, junction snapping, 5 spread via-points, and a 300 s U-turn penalty, the north-side spur around Hooge Mierde / De Vrij disappears and the solver prefers a 200-400 m detour over reversing on the same way.
+
