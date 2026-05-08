@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for velo-club-web on 2026-05-06T06:55:18Z
+# fly.toml app configuration file generated for paceline-graphhopper on 2026-05-08T07:32:57Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -10,10 +10,14 @@ primary_region = 'ams'
 
 [[mounts]]
   source = 'data'
-  destination = '/graphhopper'
+  destination = '/graphhopper/data'
+
+[[mounts]]
+  source = 'graphhopper-cache'
+  destination = '/graphhopper/graphhopper-cache'
 
 [http_service]
-  internal_port = 8989
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
