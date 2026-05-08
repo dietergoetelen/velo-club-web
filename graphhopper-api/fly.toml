@@ -10,11 +10,7 @@ primary_region = 'ams'
 
 [[mounts]]
   source = 'data'
-  destination = '/graphhopper/data'
-
-[[mounts]]
-  source = 'graphhopper_cache'
-  destination = '/graphhopper/graphhopper_cache'
+  destination = '/graphhopper'
 
 [http_service]
   internal_port = 8989
