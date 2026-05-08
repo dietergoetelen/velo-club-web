@@ -1,7 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
-import type { Club, ClubMember, Route } from '@/lib/types';
+import { toggleAttendance } from '@/lib/actions/attendance';
+import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
+import type { Attendance, Club, ClubMember, Route } from '@/lib/types';
 import RideMapClient from './ride-map-client';
 import { DeleteRideButton } from './delete-ride-button';
 
@@ -45,10 +47,30 @@ export default async function RideDetailPage({
 
   if (ride.club !== club.id) notFound();
 
-  const isCaptain = await pb.collection('club_members')
-    .getFirstListItem<ClubMember>(`club = "${club.id}" && user = "${user.id}" && role = "captain"`)
-    .then(() => true)
-    .catch(() => false);
+  const myMembership = await pb.collection('club_members')
+    .getFirstListItem<ClubMember>(`club = "${club.id}" && user = "${user.id}"`)
+    .catch(() => null);
+  const isMember  = !!myMembership;
+  const isCaptain = myMembership?.role === 'captain';
+
+  const attendances = await pb.collection('attendances').getFullList<Attendance>({
+    filter: `route = "${ride.id}"`,
+  }).catch(() => []);
+
+  const attendees: StackedUser[] = (await Promise.all(
+    attendances.map(async a => {
+      const u = await pb.collection('users').getOne(a.user).catch(() => null);
+      if (!u) return null;
+      const name = (u['name'] as string) || (u['username'] as string) || (u['email'] as string);
+      return {
+        id:     a.user,
+        name,
+        avatar: ((u['avatar'] as string) ?? '') as string,
+      };
+    }),
+  )).filter((u): u is StackedUser => u !== null);
+
+  const isAttending = attendances.some(a => a.user === user.id);
 
   return (
     <div className="fixed inset-0 top-16 z-10 flex" style={{ backgroundColor: 'var(--paper)' }}>
@@ -112,6 +134,33 @@ export default async function RideDetailPage({
           <div>
             <p className="field-label">Surface</p>
             <p className="text-ink font-bold capitalize">{ride.surface}</p>
+          </div>
+
+          {/* Attendance */}
+          <div>
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="field-label mb-0">Going</p>
+              <span className="text-xs font-black text-ink-soft tabular-nums">
+                {attendees.length}
+              </span>
+            </div>
+            {attendees.length > 0 ? (
+              <AvatarStack users={attendees} size={36} visible={3} />
+            ) : (
+              <p className="text-ink-soft text-sm">No-one yet — be the first.</p>
+            )}
+            {isMember && (
+              <form action={toggleAttendance} className="mt-4">
+                <input type="hidden" name="rideId" value={ride.id} />
+                <input type="hidden" name="slug"   value={slug} />
+                <button
+                  type="submit"
+                  className={isAttending ? 'btn-secondary w-full' : 'btn-primary w-full'}
+                >
+                  {isAttending ? "✓ I'm in — tap to cancel" : "I'm joining"}
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Garmin / GPX export */}

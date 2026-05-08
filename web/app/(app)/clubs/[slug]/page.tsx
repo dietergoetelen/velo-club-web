@@ -4,8 +4,9 @@ import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
+import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import { DAY_NAMES, compareSchedules } from '@/lib/schedules';
-import type { Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
+import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
 function clubAccent(id: string) { return PALETTE[id.charCodeAt(0) % 4]; }
@@ -74,11 +75,13 @@ function RideCard({
   slug,
   index,
   scheduleLabel,
+  attendees,
 }: {
   ride:           Route;
   slug:           string;
   index:          number;
   scheduleLabel?: string;
+  attendees:      StackedUser[];
 }) {
   return (
     <Link
@@ -119,6 +122,15 @@ function RideCard({
           {formatDate(ride.date)} · {formatTime(ride.date)} · {ride.distance_km} km · {ride.elevation_m} m ↑
         </p>
       </div>
+
+      {attendees.length > 0 && (
+        <div className="shrink-0 flex items-center gap-2.5">
+          <AvatarStack users={attendees} size={30} />
+          <span className="text-xs font-black text-ink-soft tabular-nums">
+            {attendees.length}
+          </span>
+        </div>
+      )}
 
     </Link>
   );
@@ -165,24 +177,51 @@ export default async function ClubPage({
       }).catch(() => [])
     : [];
 
-  // Fetch user details for members + pending requests (viewRule allows this after migration 003)
-  const userIds = [...new Set([
-    ...members.map(m => m.user),
-    ...pendingRequests.map(r => r.user),
-  ])];
-  const usersById: Record<string, { name: string; username: string; email: string }> = {};
-  await Promise.all(
-    userIds.map(id =>
-      pb.collection('users').getOne(id)
-        .then(u => { usersById[id] = { name: u['name'] as string, username: u['username'] as string, email: u['email'] as string }; })
-        .catch(() => {}),
-    ),
-  );
-
   const rides = await pb.collection('routes').getFullList<Route>({
     filter: `club = "${club.id}" && status != "cancelled"`,
     sort:   'date',
   }).catch(() => []);
+
+  const attendances = rides.length > 0
+    ? await pb.collection('attendances').getFullList<Attendance>({
+        filter: rides.map(r => `route = "${r.id}"`).join(' || '),
+      }).catch(() => [])
+    : [];
+
+  // Fetch user details for members + pending requests + attendees (viewRule allows this after migration 003)
+  const userIds = [...new Set([
+    ...members.map(m => m.user),
+    ...pendingRequests.map(r => r.user),
+    ...attendances.map(a => a.user),
+  ])];
+  const usersById: Record<string, { name: string; username: string; email: string; avatar: string }> = {};
+  await Promise.all(
+    userIds.map(id =>
+      pb.collection('users').getOne(id)
+        .then(u => {
+          usersById[id] = {
+            name:     u['name']     as string,
+            username: u['username'] as string,
+            email:    u['email']    as string,
+            avatar:   (u['avatar']  as string) ?? '',
+          };
+        })
+        .catch(() => {}),
+    ),
+  );
+
+  const attendeesByRide = new Map<string, StackedUser[]>();
+  for (const a of attendances) {
+    const u = usersById[a.user];
+    if (!u) continue;
+    const list = attendeesByRide.get(a.route) ?? [];
+    list.push({
+      id:     a.user,
+      name:   u.name || u.username || u.email,
+      avatar: u.avatar,
+    });
+    attendeesByRide.set(a.route, list);
+  }
 
   const schedules = club.schedules_enabled
     ? (await pb.collection('club_schedules').getFullList<ClubSchedule>({
@@ -371,6 +410,7 @@ export default async function ClubPage({
                       slug={slug}
                       index={i}
                       scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
+                      attendees={attendeesByRide.get(ride.id) ?? []}
                     />
                   ))}
                 </div>
@@ -386,6 +426,7 @@ export default async function ClubPage({
                 slug={slug}
                 index={i}
                 scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
+                attendees={attendeesByRide.get(ride.id) ?? []}
               />
             ))}
           </div>
