@@ -73,142 +73,158 @@ export default async function RideDetailPage({
   const isAttending = attendances.some(a => a.user === user.id);
 
   return (
-    <div className="fixed inset-0 top-16 z-10 flex" style={{ backgroundColor: 'var(--paper)' }}>
+    <div
+      className="
+        md:fixed md:inset-0 md:top-16 md:z-10
+        md:grid md:grid-cols-[380px_1fr] md:grid-rows-[auto_1fr]
+      "
+      style={{ backgroundColor: 'var(--paper)' }}
+    >
 
-      {/* ══ Left panel ══════════════════════════════════════════════════════ */}
+      {/* ══ Title ══════════════════════════════════════════════════════════
+           Mobile: top of page. Desktop: top of left column.                */}
       <div
-        className="w-[380px] shrink-0 flex flex-col overflow-hidden"
-        style={{ borderRight: '2px solid var(--ink)' }}
+        className="pb-5 md:px-7 md:pt-7 md:col-start-1 md:row-start-1 md:shrink-0"
+        style={{ borderBottom: '2px solid var(--line)' }}
       >
-        {/* Header */}
-        <div
-          className="px-7 pt-7 pb-5 shrink-0"
-          style={{ borderBottom: '2px solid var(--line)' }}
+        <Link
+          href={`/clubs/${slug}`}
+          className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
         >
-          <Link
-            href={`/clubs/${slug}`}
-            className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
-          >
-            ← {club.name}
-          </Link>
-          <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
-            {ride.name}
-          </h1>
+          ← {club.name}
+        </Link>
+        <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
+          {ride.name}
+        </h1>
+      </div>
+
+      {/* ══ Map ═══════════════════════════════════════════════════════════
+           Mobile: full-bleed, fixed height. Desktop: right column, full height. */}
+      <div
+        className="
+          relative
+          -mx-6 md:mx-0 my-6 md:my-0
+          h-[55vh] md:h-auto
+          md:col-start-2 md:row-start-1 md:row-end-3
+          border-y-2 md:border-y-0 md:border-l-2 border-ink
+        "
+      >
+        <RideMapClient coordinates={ride.coordinates} />
+      </div>
+
+      {/* ══ Details ═══════════════════════════════════════════════════════
+           Mobile: below the map. Desktop: scrollable left column body.     */}
+      <div
+        className="
+          space-y-6 pb-4
+          md:col-start-1 md:row-start-2 md:overflow-y-auto md:px-7 md:py-6 md:pb-6
+        "
+      >
+
+        {/* Date & time */}
+        <div>
+          <p className="field-label">Date & time</p>
+          <p className="font-heading font-black text-ink text-lg leading-snug">
+            {formatDate(ride.date)}
+          </p>
+          <p className="text-ink-soft text-sm mt-0.5">
+            Starting at {formatTime(ride.date)}
+          </p>
         </div>
 
-        {/* Details */}
-        <div className="flex-1 overflow-y-auto px-7 py-6 space-y-6">
-
-          {/* Date & time */}
-          <div>
-            <p className="field-label">Date & time</p>
-            <p className="font-heading font-black text-ink text-lg leading-snug">
-              {formatDate(ride.date)}
-            </p>
-            <p className="text-ink-soft text-sm mt-0.5">
-              Starting at {formatTime(ride.date)}
-            </p>
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <div
+            className="rounded-xl p-4"
+            style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
+          >
+            <p className="field-label mb-1">Distance</p>
+            <p className="font-heading font-black text-2xl text-ink">{ride.distance_km}</p>
+            <p className="text-xs text-ink-soft font-medium">km</p>
           </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div
-              className="rounded-xl p-4"
-              style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
-            >
-              <p className="field-label mb-1">Distance</p>
-              <p className="font-heading font-black text-2xl text-ink">{ride.distance_km}</p>
-              <p className="text-xs text-ink-soft font-medium">km</p>
-            </div>
-            <div
-              className="rounded-xl p-4"
-              style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
-            >
-              <p className="field-label mb-1">Elevation</p>
-              <p className="font-heading font-black text-2xl text-ink">{ride.elevation_m}</p>
-              <p className="text-xs text-ink-soft font-medium">m gain</p>
-            </div>
+          <div
+            className="rounded-xl p-4"
+            style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
+          >
+            <p className="field-label mb-1">Elevation</p>
+            <p className="font-heading font-black text-2xl text-ink">{ride.elevation_m}</p>
+            <p className="text-xs text-ink-soft font-medium">m gain</p>
           </div>
+        </div>
 
-          {/* Surface */}
-          <div>
-            <p className="field-label">Surface</p>
-            <p className="text-ink font-bold capitalize">{ride.surface}</p>
+        {/* Surface */}
+        <div>
+          <p className="field-label">Surface</p>
+          <p className="text-ink font-bold capitalize">{ride.surface}</p>
+        </div>
+
+        {/* Attendance */}
+        <div>
+          <div className="flex items-baseline justify-between mb-3">
+            <p className="field-label mb-0">Going</p>
+            <span className="text-xs font-black text-ink-soft tabular-nums">
+              {attendees.length}
+            </span>
           </div>
+          {attendees.length > 0 ? (
+            <AvatarStack users={attendees} size={36} visible={3} />
+          ) : (
+            <p className="text-ink-soft text-sm">No-one yet — be the first.</p>
+          )}
+          {isMember && (
+            <form action={toggleAttendance} className="mt-4">
+              <input type="hidden" name="rideId" value={ride.id} />
+              <input type="hidden" name="slug"   value={slug} />
+              <button
+                type="submit"
+                className={isAttending ? 'btn-secondary w-full' : 'btn-primary w-full'}
+              >
+                {isAttending ? "✓ I'm in — tap to cancel" : "I'm joining"}
+              </button>
+            </form>
+          )}
+        </div>
 
-          {/* Attendance */}
-          <div>
-            <div className="flex items-baseline justify-between mb-3">
-              <p className="field-label mb-0">Going</p>
-              <span className="text-xs font-black text-ink-soft tabular-nums">
-                {attendees.length}
-              </span>
-            </div>
-            {attendees.length > 0 ? (
-              <AvatarStack users={attendees} size={36} visible={3} />
-            ) : (
-              <p className="text-ink-soft text-sm">No-one yet — be the first.</p>
-            )}
-            {isMember && (
-              <form action={toggleAttendance} className="mt-4">
-                <input type="hidden" name="rideId" value={ride.id} />
-                <input type="hidden" name="slug"   value={slug} />
-                <button
-                  type="submit"
-                  className={isAttending ? 'btn-secondary w-full' : 'btn-primary w-full'}
-                >
-                  {isAttending ? "✓ I'm in — tap to cancel" : "I'm joining"}
-                </button>
-              </form>
-            )}
-          </div>
+        {/* Garmin / GPX export */}
+        <div>
+          <a
+            href={`/clubs/${slug}/rides/${ride.id}/gpx`}
+            download
+            className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
+            style={{
+              backgroundColor: 'var(--amber)',
+              border:          '2px solid var(--ink)',
+              boxShadow:       '3px 3px 0px var(--ink)',
+              color:           'var(--ink)',
+              textDecoration:  'none',
+            }}
+          >
+            ⬇ Download GPX
+          </a>
+          <p className="text-xs text-ink-soft mt-1.5">
+            Import into Garmin Connect as a course.
+          </p>
+        </div>
 
-          {/* Garmin / GPX export */}
-          <div>
-            <a
-              href={`/clubs/${slug}/rides/${ride.id}/gpx`}
-              download
+        {isCaptain && (
+          <div className="pt-2 space-y-2">
+            <Link
+              href={`/clubs/${slug}/rides/${ride.id}/edit`}
               className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
               style={{
-                backgroundColor: 'var(--amber)',
+                backgroundColor: 'white',
                 border:          '2px solid var(--ink)',
                 boxShadow:       '3px 3px 0px var(--ink)',
                 color:           'var(--ink)',
                 textDecoration:  'none',
               }}
             >
-              ⬇ Download GPX
-            </a>
-            <p className="text-xs text-ink-soft mt-1.5">
-              Import into Garmin Connect as a course.
-            </p>
+              ✎ Edit route
+            </Link>
+            <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
           </div>
+        )}
 
-          {isCaptain && (
-            <div className="pt-2 space-y-2">
-              <Link
-                href={`/clubs/${slug}/rides/${ride.id}/edit`}
-                className="w-full inline-flex items-center justify-center gap-2 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
-                style={{
-                  backgroundColor: 'white',
-                  border:          '2px solid var(--ink)',
-                  boxShadow:       '3px 3px 0px var(--ink)',
-                  color:           'var(--ink)',
-                  textDecoration:  'none',
-                }}
-              >
-                ✎ Edit route
-              </Link>
-              <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
-            </div>
-          )}
-
-        </div>
-      </div>
-
-      {/* ══ Map ═════════════════════════════════════════════════════════════ */}
-      <div className="flex-1 relative">
-        <RideMapClient coordinates={ride.coordinates} />
       </div>
 
     </div>
