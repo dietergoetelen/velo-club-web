@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
+import { markdownToPreview } from '@/lib/markdown';
 import type { Club } from '@/lib/types';
 
 const INITIAL_LIMIT = 5;
@@ -64,7 +65,7 @@ export function DiscoverClubs({
                   <div className="min-w-0">
                     <p className="font-heading font-bold text-ink truncate">{club.name}</p>
                     {club.description && (
-                      <p className="text-sm text-ink-soft mt-0.5 truncate">{club.description}</p>
+                      <p className="text-sm text-ink-soft mt-0.5 truncate">{markdownToPreview(club.description)}</p>
                     )}
                   </div>
                   {isPending

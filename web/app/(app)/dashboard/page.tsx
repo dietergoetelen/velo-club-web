@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/session';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
+import { markdownToPreview } from '@/lib/markdown';
 import type { Club, ClubMember, JoinRequest } from '@/lib/types';
 
 function greeting() {
@@ -161,7 +162,7 @@ export default async function DashboardPage() {
                 </div>
 
                 {club.description && (
-                  <p className="text-sm text-ink-soft line-clamp-2">{club.description}</p>
+                  <p className="text-sm text-ink-soft line-clamp-2">{markdownToPreview(club.description)}</p>
                 )}
 
                 <p className="mt-4 text-xs font-black text-ink-soft group-hover:text-accent transition-colors duration-200 uppercase tracking-wide">
@@ -202,7 +203,7 @@ export default async function DashboardPage() {
                   <div className="min-w-0">
                     <p className="font-heading font-bold text-ink truncate">{club.name}</p>
                     {club.description && (
-                      <p className="text-sm text-ink-soft mt-0.5 truncate">{club.description}</p>
+                      <p className="text-sm text-ink-soft mt-0.5 truncate">{markdownToPreview(club.description)}</p>
                     )}
                   </div>
                   {isPending

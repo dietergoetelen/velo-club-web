@@ -220,4 +220,65 @@ body {
     @apply text-xs font-black uppercase tracking-[0.14em] text-ink-soft;
   }
 
+  /* ── Markdown body — used by club intro + editor preview ── */
+  .markdown-body {
+    @apply text-base leading-relaxed;
+    color: var(--ink);
+
+    h1 { @apply font-heading font-black text-2xl tracking-tight mt-5 mb-2; }
+    h2 { @apply font-heading font-black text-xl  tracking-tight mt-5 mb-2; }
+    h3 { @apply font-heading font-black text-lg  tracking-tight mt-4 mb-1.5; }
+
+    p { @apply mb-3; }
+
+    a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 600;
+    }
+    a:hover { color: var(--ink); }
+
+    ul, ol { @apply mb-3 pl-6 space-y-1; }
+    ul { list-style: disc; }
+    ol { list-style: decimal; }
+
+    blockquote {
+      @apply pl-4 italic mb-3;
+      border-left: 3px solid var(--amber);
+      color: var(--ink-soft);
+    }
+
+    code {
+      @apply text-sm px-1.5 py-0.5 rounded;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background-color: var(--muted);
+    }
+    pre {
+      @apply text-sm p-3 rounded-lg mb-3 overflow-x-auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background-color: var(--muted);
+      border: 2px solid var(--line);
+    }
+    pre code { @apply p-0; background: transparent; }
+
+    strong { @apply font-bold; }
+    em     { @apply italic; }
+
+    hr {
+      @apply my-4;
+      border: 0;
+      border-top: 2px dashed var(--line);
+    }
+
+    img { @apply rounded-lg max-w-full; }
+
+    table { @apply text-sm w-full mb-3; border-collapse: collapse; }
+    th, td { @apply px-3 py-2; border: 1px solid var(--line); }
+    th { @apply font-black; background-color: var(--muted); }
+
+    > :first-child { margin-top: 0 !important; }
+    > :last-child  { margin-bottom: 0 !important; }
+  }
+
 }

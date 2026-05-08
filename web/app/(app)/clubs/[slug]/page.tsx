@@ -5,6 +5,7 @@ import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
+import { ClubIntro } from '@/components/club-intro';
 import { DAY_NAMES, compareSchedules } from '@/lib/schedules';
 import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
 
@@ -275,9 +276,6 @@ export default async function ClubPage({
             <h1 className="font-heading font-black text-4xl md:text-5xl text-ink tracking-tight leading-[1.1]">
               {club.name}
             </h1>
-            {club.description && (
-              <p className="mt-3 text-ink-soft text-base">{club.description}</p>
-            )}
             <div className="mt-5 flex gap-2 flex-wrap">
               {isCaptain && <span className="badge-brand">captain</span>}
               {isMember && !isCaptain && <span className="badge-neutral">member</span>}
@@ -354,6 +352,11 @@ export default async function ClubPage({
             ))}
           </div>
         </section>
+      )}
+
+      {/* ── About / intro ──────────────────────────────────────────────── */}
+      {club.description && club.description.trim() && (
+        <ClubIntro markdown={club.description} />
       )}
 
       {/* ── Upcoming rides ─────────────────────────────────────────────── */}

@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { updateClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
 import { AvatarUpload } from '@/components/avatar-upload';
+import { MarkdownEditor } from '@/components/markdown-editor';
 import { StartLocationPicker } from './start-location-picker';
 import type { Club } from '@/lib/types';
 
@@ -37,13 +38,17 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
 
         <div>
           <label className="field-label">
-            Description
+            About this club
             <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">(optional)</span>
           </label>
-          <textarea
-            name="description" rows={3}
+          <p className="text-xs text-ink-soft mb-2 -mt-1">
+            Welcome new members, set expectations, share what makes your club tick.
+          </p>
+          <MarkdownEditor
+            name="description"
             defaultValue={club.description}
-            className="field-input resize-none"
+            rows={10}
+            placeholder="Tell people about your club — pace, vibe, where you ride…"
           />
         </div>
 
