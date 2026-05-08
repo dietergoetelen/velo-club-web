@@ -9,11 +9,11 @@ RUN wget -q -O graphhopper.jar \
 COPY config.yml .
 COPY *.json .
 
-# Persisted across restarts:
-#   /graphhopper/data              — OSM PBF source (datareader.file)
-#   /graphhopper/graphhopper_cache — built graph (graph.location, multi-GB,
-#                                    ~25 min to rebuild, MMAP access)
-VOLUME ["/graphhopper/data", "/graphhopper/graphhopper_cache"]
+# Persisted across restarts (single 'data' volume mounted at /graphhopper/data):
+#   /graphhopper/data/bin   — OSM PBF source (datareader.file)
+#   /graphhopper/data/cache — built graph (graph.location, multi-GB,
+#                              ~25 min to rebuild, MMAP access)
+VOLUME ["/graphhopper/data"]
 
 EXPOSE 8989 8990
 
