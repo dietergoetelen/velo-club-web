@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { getPBWithToken } from '@/lib/pocketbase';
 import { getToken, getCurrentUser } from '@/lib/session';
 
@@ -19,7 +20,9 @@ export async function createClub(
   const description = (form.get('description') as string).trim();
   const avatar      = form.get('avatar') as File | null;
 
-  if (!name) return 'Club name is required.';
+  const t = await getTranslations('errors');
+
+  if (!name) return t('clubNameRequired');
 
   const token = await getToken();
   const user  = await getCurrentUser();
@@ -33,13 +36,13 @@ export async function createClub(
     .then(r => r.totalItems)
     .catch(() => 0);
   if (captainCount >= MAX_CLUBS_PER_CAPTAIN) {
-    return `You can captain at most ${MAX_CLUBS_PER_CAPTAIN} clubs.`;
+    return t('tooManyClubs', { max: MAX_CLUBS_PER_CAPTAIN });
   }
 
   const existing = await pb.collection('clubs')
     .getFirstListItem(`slug = "${slug}"`)
     .catch(() => null);
-  if (existing) return `A club named "${name}" already exists.`;
+  if (existing) return t('clubNameTaken', { name });
 
   const data: Record<string, unknown> = { name, description, slug };
   if (avatar && avatar.size > 0) data['avatar'] = avatar;
@@ -53,7 +56,7 @@ export async function createClub(
       points: 0,
     });
   } catch {
-    return 'Failed to create club. Please try again.';
+    return t('createClubFailed');
   }
 
   redirect(`/clubs/${slug}`);
@@ -70,17 +73,18 @@ export async function requestToJoin(
   const user  = await getCurrentUser();
   if (!token || !user) redirect('/login');
 
+  const t  = await getTranslations('errors');
   const pb = getPBWithToken(token);
 
   const alreadyMember = await pb.collection('club_members')
     .getFirstListItem(`club = "${clubId}" && user = "${user.id}"`)
     .catch(() => null);
-  if (alreadyMember) return 'You are already a member of this club.';
+  if (alreadyMember) return t('alreadyMember');
 
   const existingRequest = await pb.collection('join_requests')
     .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && status = "pending"`)
     .catch(() => null);
-  if (existingRequest) return 'You already have a pending request.';
+  if (existingRequest) return t('requestPending');
 
   try {
     await pb.collection('join_requests').create({
@@ -90,7 +94,7 @@ export async function requestToJoin(
     });
   } catch (err) {
     console.error('[requestToJoin]', err);
-    return 'Failed to send request. Please try again.';
+    return t('requestFailed');
   }
 
   redirect(`/clubs/${slug}`);
@@ -113,7 +117,9 @@ export async function updateClub(
   const startLat    = startLatRaw ? parseFloat(startLatRaw) : 0;
   const startLng    = startLngRaw ? parseFloat(startLngRaw) : 0;
 
-  if (!name) return 'Club name is required.';
+  const t = await getTranslations('errors');
+
+  if (!name) return t('clubNameRequired');
 
   const token = await getToken();
   const user  = await getCurrentUser();
@@ -124,7 +130,7 @@ export async function updateClub(
   const membership = await pb.collection('club_members')
     .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
     .catch(() => null);
-  if (!membership) return 'Only the captain can edit club settings.';
+  if (!membership) return t('captainOnlyEdit');
 
   const data: Record<string, unknown> = {
     name,
@@ -139,7 +145,7 @@ export async function updateClub(
   try {
     await pb.collection('clubs').update(clubId, data);
   } catch {
-    return 'Failed to save changes.';
+    return t('saveChangesFailed');
   }
 
   revalidatePath(`/clubs/${slug}`);

@@ -1,9 +1,10 @@
+import { getTranslations } from 'next-intl/server';
 import { createSchedule, updateSchedule } from '@/lib/actions/schedules';
 import { DAY_NAMES } from '@/lib/schedules';
 import type { ClubSchedule } from '@/lib/types';
 import { DeleteScheduleButton } from './delete-schedule-button';
 
-export function SchedulesSection({
+export async function SchedulesSection({
   clubId,
   slug,
   schedules,
@@ -12,12 +13,14 @@ export function SchedulesSection({
   slug:      string;
   schedules: ClubSchedule[];
 }) {
+  const t = await getTranslations('clubs.schedules');
+
   return (
     <div className="card p-8 space-y-6">
       <div>
-        <p className="eyebrow mb-1">Schedules</p>
+        <p className="eyebrow mb-1">{t('heading')}</p>
         <p className="text-ink-soft text-sm">
-          Each row is a weekly slot. Add separate rows for staggered groups (A leaves later, B earlier, etc.).
+          {t('intro')}
         </p>
       </div>
 
@@ -39,8 +42,8 @@ export function SchedulesSection({
                   required
                   maxLength={20}
                   defaultValue={s.label}
-                  aria-label="Schedule label"
-                  title="Edit and press Enter to rename"
+                  aria-label={t('ariaScheduleLabel')}
+                  title={t('renameTitle')}
                   className="px-3 py-1 rounded-full text-sm font-black text-center w-32 focus:outline-none focus:ring-2"
                   style={{
                     backgroundColor: 'var(--amber)',
@@ -69,18 +72,18 @@ export function SchedulesSection({
 
         <div className="grid grid-cols-[1fr_auto_auto] gap-2">
           <div>
-            <label className="field-label">Label</label>
+            <label className="field-label">{t('labelLabel')}</label>
             <input
               name="label"
               type="text"
               required
               maxLength={20}
-              placeholder="A"
+              placeholder={t('labelPlaceholder')}
               className="field-input"
             />
           </div>
           <div>
-            <label className="field-label">Day</label>
+            <label className="field-label">{t('dayLabel')}</label>
             <select name="day_of_week" required defaultValue="0" className="field-input">
               {DAY_NAMES.map((d, i) => (
                 <option key={d} value={i}>{d}</option>
@@ -88,7 +91,7 @@ export function SchedulesSection({
             </select>
           </div>
           <div>
-            <label className="field-label">Time</label>
+            <label className="field-label">{t('timeLabel')}</label>
             <input
               name="time"
               type="time"
@@ -100,7 +103,7 @@ export function SchedulesSection({
         </div>
 
         <button type="submit" className="btn-secondary w-full text-sm">
-          + Add schedule
+          {t('addSchedule')}
         </button>
       </form>
     </div>

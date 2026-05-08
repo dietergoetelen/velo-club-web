@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
@@ -23,13 +24,13 @@ function getInitials(nameOrEmail: string) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
+  return new Date(iso).toLocaleDateString('nl-BE', {
     weekday: 'short', day: 'numeric', month: 'short',
   });
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-GB', {
+  return new Date(iso).toLocaleTimeString('nl-BE', {
     hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
@@ -66,7 +67,7 @@ function buildDayGroups(schedules: ClubSchedule[], rides: Route[]): DayGroup[] {
 function DayGroupHeader({ date }: { date: Date }) {
   return (
     <p className="font-heading font-black text-sm text-ink uppercase tracking-wide">
-      {DAY_NAMES[date.getDay()]} · {date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+      {DAY_NAMES[date.getDay()]} · {date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}
     </p>
   );
 }
@@ -145,6 +146,9 @@ export default async function ClubPage({
   const { slug } = await params;
   const user      = await getCurrentUser();
   if (!user) redirect('/login');
+
+  const tDetail  = await getTranslations('clubs.detail');
+  const tMembers = await getTranslations('clubs.members');
 
   const pb = await getAuthenticatedPB();
 
@@ -252,7 +256,7 @@ export default async function ClubPage({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={fileUrl('clubs', club.id, club.avatar, '400x400')}
-              alt={`${club.name} avatar`}
+              alt={tDetail('avatarAlt', { name: club.name })}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -280,14 +284,14 @@ export default async function ClubPage({
               <ClubIntro markdown={club.description} />
             )}
             <div className="mt-5 flex gap-2 flex-wrap">
-              {isCaptain && <span className="badge-brand">captain</span>}
-              {isMember && !isCaptain && <span className="badge-neutral">member</span>}
+              {isCaptain && <span className="badge-brand">{tDetail('captainBadge')}</span>}
+              {isMember && !isCaptain && <span className="badge-neutral">{tDetail('memberBadge')}</span>}
             </div>
           </div>
 
           {isCaptain && (
             <Link href={`/clubs/${slug}/settings`} className="btn-secondary text-sm shrink-0">
-              ⚙ Settings
+              {tDetail('settingsLink')}
             </Link>
           )}
         </div>
@@ -302,15 +306,15 @@ export default async function ClubPage({
             <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--mint)', border: '2px solid var(--ink)', boxShadow: '2px 2px 0px var(--ink)' }} />
           </div>
           <p className="font-heading font-bold text-xl text-ink">
-            Want to ride with {club.name}?
+            {tDetail('joinTitle', { name: club.name })}
           </p>
           <p className="text-ink-soft text-sm mt-2 mb-6">
             {myRequest
-              ? 'Your request is pending — the captain will review it shortly.'
-              : 'Send a join request to the captain.'}
+              ? tDetail('joinSubtitlePending')
+              : tDetail('joinSubtitle')}
           </p>
           {!myRequest && <JoinRequestForm clubId={club.id} slug={slug} />}
-          {myRequest  && <span className="badge-neutral">Request pending…</span>}
+          {myRequest  && <span className="badge-neutral">{tDetail('joinPendingBadge')}</span>}
         </div>
       )}
 
@@ -318,7 +322,7 @@ export default async function ClubPage({
       {isCaptain && pendingRequests.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <p className="eyebrow">Join requests</p>
+            <p className="eyebrow">{tDetail('joinRequestsHeading')}</p>
             <span
               className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center"
               style={{ backgroundColor: 'var(--pink)', border: '2px solid var(--ink)', boxShadow: '2px 2px 0px var(--ink)' }}
@@ -342,13 +346,13 @@ export default async function ClubPage({
                     <input type="hidden" name="requestId" value={req.id} />
                     <input type="hidden" name="clubId"    value={club.id} />
                     <input type="hidden" name="slug"      value={slug} />
-                    <button type="submit" className="btn-primary text-xs px-4 py-2">Approve</button>
+                    <button type="submit" className="btn-primary text-xs px-4 py-2">{tDetail('approve')}</button>
                   </form>
                   <form action={rejectJoinRequest}>
                     <input type="hidden" name="requestId" value={req.id} />
                     <input type="hidden" name="clubId"    value={club.id} />
                     <input type="hidden" name="slug"      value={slug} />
-                    <button type="submit" className="btn-secondary text-xs px-4 py-2">Decline</button>
+                    <button type="submit" className="btn-secondary text-xs px-4 py-2">{tDetail('decline')}</button>
                   </form>
                 </div>
               </div>
@@ -361,7 +365,7 @@ export default async function ClubPage({
       <section>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <p className="eyebrow">Upcoming rides</p>
+            <p className="eyebrow">{tDetail('upcomingRides')}</p>
             {rides.length > 0 && (
               <span
                 className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center"
@@ -378,7 +382,7 @@ export default async function ClubPage({
           </div>
           {isCaptain && (
             <Link href={`/clubs/${slug}/rides/new`} className="btn-primary text-sm">
-              + Plan a ride
+              {tDetail('planRide')}
             </Link>
           )}
         </div>
@@ -391,10 +395,12 @@ export default async function ClubPage({
                 <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--pink)', border: '2px solid var(--ink)' }} />
               </div>
             </div>
-            <p className="font-heading font-bold text-lg text-ink">No rides planned yet.</p>
+            <p className="font-heading font-bold text-lg text-ink">{tDetail('noRidesTitle')}</p>
             {isCaptain && (
               <p className="text-ink-soft text-sm mt-1.5">
-                Hit <span className="font-bold text-accent">+ Plan a ride</span> to get one on the calendar!
+                {tDetail.rich('noRidesHint', {
+                  link: () => <span className="font-bold text-accent">{tDetail('noRidesPlanLink')}</span>,
+                })}
               </p>
             )}
           </div>
@@ -437,7 +443,7 @@ export default async function ClubPage({
       {/* ── Members ────────────────────────────────────────────────────── */}
       <section>
         <div className="flex items-center gap-3 mb-4">
-          <p className="eyebrow">Members</p>
+          <p className="eyebrow">{tMembers('heading')}</p>
           <span
             className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center"
             style={{ backgroundColor: 'var(--mint)', border: '2px solid var(--ink)', boxShadow: '2px 2px 0px var(--ink)', color: 'var(--ink)' }}
@@ -449,7 +455,7 @@ export default async function ClubPage({
           <ul className="flex flex-wrap gap-5">
             {members.map((m, i) => {
               const u             = usersById[m.user];
-              const displayName   = u?.name || u?.username || u?.email || 'Member';
+              const displayName   = u?.name || u?.username || u?.email || tMembers('fallbackName');
               const isThisCaptain = m.role === 'captain';
               const canPromote    = isCaptain && !isThisCaptain && m.user !== user.id;
 
@@ -480,7 +486,7 @@ export default async function ClubPage({
 
                   {isThisCaptain && (
                     <span
-                      aria-label="Captain"
+                      aria-label={tMembers('captainAria')}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black pointer-events-none"
                       style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
                     >
@@ -497,7 +503,7 @@ export default async function ClubPage({
                     >
                       {displayName}
                       {isThisCaptain && (
-                        <span className="ml-1.5" style={{ color: 'var(--amber)' }}>· captain</span>
+                        <span className="ml-1.5" style={{ color: 'var(--amber)' }}>· {tMembers('captainTooltip')}</span>
                       )}
                     </div>
                     {canPromote && (
@@ -510,7 +516,7 @@ export default async function ClubPage({
                           className="px-2.5 py-1 rounded text-[11px] font-black whitespace-nowrap"
                           style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
                         >
-                          ★ Make captain
+                          {tMembers('makeCaptain')}
                         </button>
                       </form>
                     )}

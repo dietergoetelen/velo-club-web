@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { fileUrl } from '@/lib/pocketbase';
 
 const COLORS = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
@@ -24,8 +25,10 @@ interface AvatarStackProps {
   size?:    number;
 }
 
-export function AvatarStack({ users, visible = 3, size = 32 }: AvatarStackProps) {
+export async function AvatarStack({ users, visible = 3, size = 32 }: AvatarStackProps) {
   if (users.length === 0) return null;
+
+  const t = await getTranslations('avatarStack');
 
   const shown   = users.slice(0, visible);
   const hidden  = users.length - shown.length;
@@ -42,7 +45,7 @@ export function AvatarStack({ users, visible = 3, size = 32 }: AvatarStackProps)
   };
 
   return (
-    <div className="flex items-center" aria-label={`${users.length} attending`}>
+    <div className="flex items-center" aria-label={t('attending', { count: users.length })}>
       {shown.map((u, i) => (
         <div
           key={u.id}
@@ -77,7 +80,7 @@ export function AvatarStack({ users, visible = 3, size = 32 }: AvatarStackProps)
             marginLeft:      -overlap,
             zIndex:          0,
           }}
-          title={`${hidden} more`}
+          title={t('more', { count: hidden })}
         >
           +{hidden}
         </div>

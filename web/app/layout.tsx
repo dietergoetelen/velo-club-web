@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Outfit, Plus_Jakarta_Sans } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import './globals.css';
 
 const outfit = Outfit({
@@ -16,16 +18,24 @@ const jakarta = Plus_Jakarta_Sans({
   display:  'swap',
 });
 
-export const metadata: Metadata = {
-  title:       'Zoesh',
-  description: 'Your cycling club, organised.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('app');
+  return {
+    title:       t('title'),
+    description: t('description'),
+  };
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale   = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" className={`${outfit.variable} ${jakarta.variable} h-full`}>
+    <html lang={locale} className={`${outfit.variable} ${jakarta.variable} h-full`}>
       <body className="min-h-full font-sans">
-        {children}
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

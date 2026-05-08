@@ -1,13 +1,27 @@
 import type { ClubSchedule } from './types';
 
-export const DAY_NAMES = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-  'Thursday', 'Friday', 'Saturday',
-] as const;
+// Sunday-first to match JS getDay() and PocketBase's day_of_week (0=Sun..6=Sat).
+// Computed via Intl.DateTimeFormat using fixed Sunday reference dates so the
+// names always come from the platform ICU data — no hand-maintained list.
+const DAY_REFERENCE_DATES = [
+  new Date(Date.UTC(2024, 0, 7)),  // Sun 7 Jan 2024
+  new Date(Date.UTC(2024, 0, 8)),  // Mon 8 Jan 2024
+  new Date(Date.UTC(2024, 0, 9)),
+  new Date(Date.UTC(2024, 0, 10)),
+  new Date(Date.UTC(2024, 0, 11)),
+  new Date(Date.UTC(2024, 0, 12)),
+  new Date(Date.UTC(2024, 0, 13)),
+];
 
-export const DAY_NAMES_SHORT = [
-  'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
-] as const;
+const LONG_DAY_FMT  = new Intl.DateTimeFormat('nl-BE', { weekday: 'long',  timeZone: 'UTC' });
+const SHORT_DAY_FMT = new Intl.DateTimeFormat('nl-BE', { weekday: 'short', timeZone: 'UTC' });
+
+function capitalize(s: string): string {
+  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
+}
+
+export const DAY_NAMES = DAY_REFERENCE_DATES.map(d => capitalize(LONG_DAY_FMT.format(d))) as readonly string[];
+export const DAY_NAMES_SHORT = DAY_REFERENCE_DATES.map(d => capitalize(SHORT_DAY_FMT.format(d))) as readonly string[];
 
 /**
  * Comparator that orders schedules by day-of-week (Mon-first), then time,

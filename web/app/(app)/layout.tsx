@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { getCurrentUser } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { logout } from '@/lib/actions/auth';
@@ -16,6 +17,8 @@ function getInitials(nameOrEmail: string) {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
+
+  const t = await getTranslations('nav');
 
   const displayName = user.name || user.email.split('@')[0];
 
@@ -36,7 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div className="flex items-center gap-4">
-            <Link href="/profile" className="flex items-center gap-3 group" aria-label="Edit your profile">
+            <Link href="/profile" className="flex items-center gap-3 group" aria-label={t('editProfile')}>
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden text-xs font-black text-ink shrink-0"
                 style={{
@@ -62,7 +65,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
 
             <form action={logout}>
-              <button type="submit" className="btn-nav">Sign out</button>
+              <button type="submit" className="btn-nav">{t('signOut')}</button>
             </form>
           </div>
 

@@ -2,14 +2,20 @@
 
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
+
+function PickerMapLoading() {
+  const t = useTranslations('common');
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-muted text-xs text-ink-soft font-bold">
+      {t('loadingMap')}
+    </div>
+  );
+}
 
 const PickerMap = dynamic(() => import('./start-location-map'), {
   ssr:     false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-muted text-xs text-ink-soft font-bold">
-      Loading map…
-    </div>
-  ),
+  loading: PickerMapLoading,
 });
 
 export function StartLocationPicker({
@@ -19,6 +25,7 @@ export function StartLocationPicker({
   initialLat: number;
   initialLng: number;
 }) {
+  const t = useTranslations('clubs.settings');
   const [lat, setLat] = useState(initialLat);
   const [lng, setLng] = useState(initialLng);
   const isSet = lat !== 0 || lng !== 0;
@@ -27,7 +34,7 @@ export function StartLocationPicker({
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       pos => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); },
-      ()  => alert('Could not get your location. Click the map instead.'),
+      ()  => alert(t('geolocationFailed')),
     );
   };
 
@@ -35,9 +42,9 @@ export function StartLocationPicker({
 
   return (
     <div>
-      <label className="field-label">Default start location</label>
+      <label className="field-label">{t('startLocationLabel')}</label>
       <p className="text-xs text-ink-soft -mt-1 mb-2">
-        Used as the default start point when planning a ride.
+        {t('startLocationHint')}
       </p>
 
       <div
@@ -57,7 +64,7 @@ export function StartLocationPicker({
           onClick={useMyLocation}
           className="btn-secondary text-xs px-3 py-1.5"
         >
-          📍 Use my location
+          {t('useMyLocation')}
         </button>
         {isSet && (
           <>
@@ -68,7 +75,7 @@ export function StartLocationPicker({
               type="button"
               onClick={clear}
               className="text-xs text-ink-soft hover:text-ink transition-colors font-black"
-              aria-label="Clear start location"
+              aria-label={t('clearStart')}
             >
               ✕
             </button>

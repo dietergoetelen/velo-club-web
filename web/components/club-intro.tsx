@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const COLLAPSED_PX = 140;
 
 export function ClubIntro({ markdown }: { markdown: string }) {
+  const t = useTranslations('clubIntro');
   const [expanded,    setExpanded]    = useState(false);
   const [needsToggle, setNeedsToggle] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function ClubIntro({ markdown }: { markdown: string }) {
           className="mt-2 text-xs font-bold uppercase tracking-[0.12em] hover:underline"
           style={{ color: 'var(--accent)' }}
         >
-          {expanded ? 'Show less ↑' : 'Show more ↓'}
+          {expanded ? t('showLess') : t('showMore')}
         </button>
       )}
     </div>

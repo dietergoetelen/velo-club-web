@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { toggleAttendance } from '@/lib/actions/attendance';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
@@ -8,13 +9,13 @@ import RideMapClient from './ride-map-client';
 import { DeleteRideButton } from './delete-ride-button';
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
+  return new Date(iso).toLocaleDateString('nl-BE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-GB', {
+  return new Date(iso).toLocaleTimeString('nl-BE', {
     hour: '2-digit', minute: '2-digit', hour12: false,
   });
 }
@@ -28,6 +29,8 @@ export default async function RideDetailPage({
 
   const user = await getCurrentUser();
   if (!user) redirect('/login');
+
+  const t = await getTranslations('rides.detail');
 
   const pb = await getAuthenticatedPB();
 
@@ -123,12 +126,12 @@ export default async function RideDetailPage({
 
         {/* Date & time */}
         <div>
-          <p className="field-label">Date & time</p>
+          <p className="field-label">{t('dateTimeLabel')}</p>
           <p className="font-heading font-black text-ink text-lg leading-snug">
             {formatDate(ride.date)}
           </p>
           <p className="text-ink-soft text-sm mt-0.5">
-            Starting at {formatTime(ride.date)}
+            {t('startingAt', { time: formatTime(ride.date) })}
           </p>
         </div>
 
@@ -138,30 +141,30 @@ export default async function RideDetailPage({
             className="rounded-xl p-4"
             style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
           >
-            <p className="field-label mb-1">Distance</p>
+            <p className="field-label mb-1">{t('distance')}</p>
             <p className="font-heading font-black text-2xl text-ink">{ride.distance_km}</p>
-            <p className="text-xs text-ink-soft font-medium">km</p>
+            <p className="text-xs text-ink-soft font-medium">{t('distanceUnit')}</p>
           </div>
           <div
             className="rounded-xl p-4"
             style={{ border: '2px solid var(--line)', backgroundColor: '#ffffff', boxShadow: '4px 4px 0px var(--line)' }}
           >
-            <p className="field-label mb-1">Elevation</p>
+            <p className="field-label mb-1">{t('elevation')}</p>
             <p className="font-heading font-black text-2xl text-ink">{ride.elevation_m}</p>
-            <p className="text-xs text-ink-soft font-medium">m gain</p>
+            <p className="text-xs text-ink-soft font-medium">{t('elevationUnit')}</p>
           </div>
         </div>
 
         {/* Surface */}
         <div>
-          <p className="field-label">Surface</p>
+          <p className="field-label">{t('surface')}</p>
           <p className="text-ink font-bold capitalize">{ride.surface}</p>
         </div>
 
         {/* Attendance */}
         <div>
           <div className="flex items-baseline justify-between mb-3">
-            <p className="field-label mb-0">Going</p>
+            <p className="field-label mb-0">{t('going')}</p>
             <span className="text-xs font-black text-ink-soft tabular-nums">
               {attendees.length}
             </span>
@@ -169,7 +172,7 @@ export default async function RideDetailPage({
           {attendees.length > 0 ? (
             <AvatarStack users={attendees} size={36} visible={3} />
           ) : (
-            <p className="text-ink-soft text-sm">No-one yet — be the first.</p>
+            <p className="text-ink-soft text-sm">{t('noOneYet')}</p>
           )}
           {isMember && (
             <form action={toggleAttendance} className="mt-4">
@@ -179,7 +182,7 @@ export default async function RideDetailPage({
                 type="submit"
                 className={isAttending ? 'btn-secondary w-full' : 'btn-primary w-full'}
               >
-                {isAttending ? "✓ I'm in — tap to cancel" : "I'm joining"}
+                {isAttending ? t('imIn') : t('imJoining')}
               </button>
             </form>
           )}
@@ -199,10 +202,10 @@ export default async function RideDetailPage({
               textDecoration:  'none',
             }}
           >
-            ⬇ Download GPX
+            {t('downloadGpx')}
           </a>
           <p className="text-xs text-ink-soft mt-1.5">
-            Import into Garmin Connect as a course.
+            {t('gpxHint')}
           </p>
         </div>
 
@@ -219,7 +222,7 @@ export default async function RideDetailPage({
                 textDecoration:  'none',
               }}
             >
-              ✎ Edit route
+              {t('editRoute')}
             </Link>
             <DeleteRideButton rideId={ride.id} rideName={ride.name} slug={slug} />
           </div>

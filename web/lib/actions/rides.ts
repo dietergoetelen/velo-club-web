@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { getToken, getCurrentUser } from '@/lib/session';
 import { getPBWithToken } from '@/lib/pocketbase';
 import { fetchThreeRoutes, fetchSegment } from '@/lib/graphhopper';
@@ -44,10 +45,12 @@ export async function saveRide(
   const coordinates = JSON.parse(form.get('coordinates') as string) as [number, number][];
   const scheduleId  = (form.get('scheduleId') as string | null) ?? '';
 
-  if (!name)              return 'Give the ride a name.';
-  if (!date)              return 'Pick a date.';
-  if (!time)              return 'Pick a start time.';
-  if (!coordinates?.length) return 'No route selected.';
+  const t = await getTranslations('errors');
+
+  if (!name)                return t('rideNameRequired');
+  if (!date)                return t('rideDateRequired');
+  if (!time)                return t('rideTimeRequired');
+  if (!coordinates?.length) return t('noRouteSelected');
 
   const token = await getToken();
   const user  = await getCurrentUser();
@@ -58,7 +61,7 @@ export async function saveRide(
   const membership = await pb.collection('club_members')
     .getFirstListItem(`club = "${clubId}" && user = "${user.id}" && role = "captain"`)
     .catch(() => null);
-  if (!membership) return 'Only the captain can plan rides.';
+  if (!membership) return t('captainOnlyPlan');
 
   try {
     await pb.collection('routes').create({
@@ -75,7 +78,7 @@ export async function saveRide(
     });
   } catch (err) {
     console.error('[saveRide]', err);
-    return 'Failed to save ride. Please try again.';
+    return t('saveRideFailed');
   }
 
   redirect(`/clubs/${slug}`);
@@ -114,7 +117,9 @@ export async function updateRideRoute(
   const elevationM  = parseFloat(form.get('elevationM') as string);
   const coordinates = JSON.parse(form.get('coordinates') as string) as [number, number][];
 
-  if (!coordinates?.length) return 'No route selected.';
+  const t = await getTranslations('errors');
+
+  if (!coordinates?.length) return t('noRouteSelected');
 
   const token = await getToken();
   const user  = await getCurrentUser();
@@ -123,12 +128,12 @@ export async function updateRideRoute(
   const pb = getPBWithToken(token);
 
   const ride = await pb.collection('routes').getOne(rideId).catch(() => null);
-  if (!ride) return 'Ride not found.';
+  if (!ride) return t('rideNotFound');
 
   const captain = await pb.collection('club_members')
     .getFirstListItem(`club = "${ride['club']}" && user = "${user.id}" && role = "captain"`)
     .catch(() => null);
-  if (!captain) return 'Only the captain can edit the route.';
+  if (!captain) return t('captainOnlyEditRoute');
 
   try {
     await pb.collection('routes').update(rideId, {
@@ -138,7 +143,7 @@ export async function updateRideRoute(
     });
   } catch (err) {
     console.error('[updateRideRoute]', err);
-    return 'Failed to save changes. Please try again.';
+    return t('updateRouteFailed');
   }
 
   redirect(`/clubs/${slug}/rides/${rideId}`);

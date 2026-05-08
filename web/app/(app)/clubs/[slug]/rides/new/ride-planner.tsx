@@ -3,18 +3,24 @@
 import { useState, useMemo, useTransition, useActionState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { generateRoutes, saveRide } from '@/lib/actions/rides';
 import { upcomingOccurrences, findMatchingSchedule, DAY_NAMES_SHORT } from '@/lib/schedules';
 import { RouteEditPanel } from '@/components/route-edit-panel';
 import type { ClubSchedule, RideRoute } from '@/lib/types';
 
+function MapLoading() {
+  const t = useTranslations('common');
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-muted">
+      <p className="text-ink-soft text-sm font-bold animate-pulse">{t('loadingMap')}</p>
+    </div>
+  );
+}
+
 const RouteMap = dynamic(() => import('./route-map'), {
   ssr:     false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-muted">
-      <p className="text-ink-soft text-sm font-bold animate-pulse">Loading map…</p>
-    </div>
-  ),
+  loading: MapLoading,
 });
 
 type StartPos = { lat: number; lng: number };
@@ -61,6 +67,7 @@ function RouteCard({
   selected: boolean;
   onClick:  () => void;
 }) {
+  const t = useTranslations('rides.create');
   return (
     <button
       type="button"
@@ -98,14 +105,14 @@ function RouteCard({
         {route.lollipopM > 0 && (
           <span
             className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full tabular-nums"
-            title={`Route folds within 25m of itself after ${route.lollipopM}m of riding`}
+            title={t('pinchTitle', { m: route.lollipopM })}
             style={{
               backgroundColor: 'color-mix(in srgb, var(--pink), white 75%)',
               border:          '1px solid var(--pink)',
               color:           'var(--ink)',
             }}
           >
-            {route.lollipopM}m pinch
+            {t('pinch', { m: route.lollipopM })}
           </span>
         )}
       </div>
@@ -128,6 +135,7 @@ export function RidePlanner({
   schedules: ClubSchedule[];
   clubStart: StartPos | null;
 }) {
+  const t = useTranslations('rides.create');
   const [startPos, setStartPos] = useState<StartPos | null>(clubStart);
   const [date, setDate]         = useState(tomorrow);
   const [time, setTime]         = useState('08:00');
@@ -167,7 +175,7 @@ export function RidePlanner({
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       pos => setStartPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      ()  => alert('Could not get your location. Click the map instead.'),
+      ()  => alert(t('geolocationFailed')),
     );
   };
 
@@ -196,7 +204,7 @@ export function RidePlanner({
     setRoutes([]);
     setSelectedRoute({
       id:          'a',
-      label:       'Custom',
+      label:       t('customLabel'),
       color:       '#FBBF24',
       distance:    0,
       elevation:   0,
@@ -267,10 +275,10 @@ export function RidePlanner({
               onClick={exitEdit}
               className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
             >
-              ← Back to routes
+              {t('backToRoutes')}
             </button>
             <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
-              Edit route
+              {t('editRouteTitle')}
             </h1>
           </>
         }
@@ -288,14 +296,14 @@ export function RidePlanner({
             {saveError && <p className="field-error">{saveError}</p>}
 
             <div>
-              <label className="field-label">Ride name</label>
+              <label className="field-label">{t('rideNameLabel')}</label>
               <RideNameInput
                 suggestion={`${scheduleLabel ? `${scheduleLabel} ` : ''}${selectedRoute.label} (${s.distance}km)`}
               />
             </div>
 
             <button type="submit" disabled={!s.canSave} className="btn-primary w-full">
-              Save ride →
+              {t('saveRide')}
             </button>
           </form>
         )}
@@ -324,14 +332,14 @@ export function RidePlanner({
             ← {clubName}
           </Link>
           <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
-            Plan a ride
+            {t('title')}
           </h1>
           <p className="text-ink-soft text-xs mt-1.5">
             {!startPos
-              ? 'Click the map to set your starting point.'
+              ? t('subtitleNoStart')
               : step === 'picking'
-              ? 'Select a route, then give it a name.'
-              : 'Fill in the details and generate routes.'}
+              ? t('subtitlePicking')
+              : t('subtitleSetup')}
           </p>
         </div>
 
@@ -340,32 +348,32 @@ export function RidePlanner({
 
           {/* ── Start position ── */}
           <div>
-            <p className="field-label">Start position</p>
+            <p className="field-label">{t('startLabel')}</p>
             {!startPos ? (
               <div className="flex gap-2">
                 <div
                   className="flex-1 rounded-lg px-3 py-2.5 text-sm text-ink-soft font-medium"
                   style={{ border: '2px dashed var(--line)' }}
                 >
-                  Click on the map →
+                  {t('startPlaceholder')}
                 </div>
                 {clubStart ? (
                   <button
                     type="button"
                     onClick={() => setStartPos(clubStart)}
                     className="btn-secondary text-xs px-3 shrink-0"
-                    title="Use club's default start"
+                    title={t('useClubStartTitle')}
                   >
-                    📍 Club start
+                    {t('useClubStart')}
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleUseMyLocation}
                     className="btn-secondary text-xs px-3 shrink-0"
-                    title="Use my location"
+                    title={t('useMyLocationTitle')}
                   >
-                    📍 My location
+                    {t('useMyLocation')}
                   </button>
                 )}
               </div>
@@ -394,7 +402,7 @@ export function RidePlanner({
           {/* ── Schedule picker ── */}
           {occurrences.length > 0 && (
             <div>
-              <p className="field-label">Use schedule</p>
+              <p className="field-label">{t('useSchedule')}</p>
               <div className="flex flex-wrap gap-2">
                 {occurrences.map(({ schedule, date: d }) => {
                   const isSelected = scheduleId === schedule.id;
@@ -424,7 +432,7 @@ export function RidePlanner({
           {/* ── Date + time ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="field-label">Date</label>
+              <label className="field-label">{t('dateLabel')}</label>
               <input
                 type="date"
                 value={date}
@@ -439,7 +447,7 @@ export function RidePlanner({
               />
             </div>
             <div>
-              <label className="field-label">Start time</label>
+              <label className="field-label">{t('timeLabel')}</label>
               <input
                 type="time"
                 value={time}
@@ -457,7 +465,7 @@ export function RidePlanner({
           {/* ── Distance slider ── */}
           <div>
             <label className="field-label">
-              Distance —{' '}
+              {t('distanceLabel')} —{' '}
               <span
                 className="font-black normal-case tracking-normal"
                 style={{ color: 'var(--accent)' }}
@@ -483,12 +491,12 @@ export function RidePlanner({
 
           {/* ── Bike type ── */}
           <div>
-            <label className="field-label">Bike type</label>
+            <label className="field-label">{t('bikeTypeLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {([
-                { value: 'racingbike',  icon: '🏁', label: 'Race'   },
-                { value: 'bike',        icon: '🚲', label: 'City'   },
-                { value: 'bike_gravel', icon: '⛰️', label: 'Gravel' },
+                { value: 'racingbike',  icon: '🏁', label: t('bikeRace')   },
+                { value: 'bike',        icon: '🚲', label: t('bikeCity')   },
+                { value: 'bike_gravel', icon: '⛰️', label: t('bikeGravel') },
               ] as const).map(opt => {
                 const isSelected = profile === opt.value;
                 return (
@@ -532,10 +540,10 @@ export function RidePlanner({
                       className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
                       style={{ borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'white' }}
                     />
-                    Crunching…
+                    {t('crunching')}
                   </span>
                 ) : (
-                  '🗺 Generate'
+                  t('generate')
                 )}
               </button>
               <button
@@ -544,7 +552,7 @@ export function RidePlanner({
                 disabled={!startPos || isPending}
                 className="btn-secondary"
               >
-                ✎ Create
+                {t('create')}
               </button>
             </div>
           )}
@@ -553,7 +561,7 @@ export function RidePlanner({
           {step === 'picking' && (
             <>
               <div className="space-y-3">
-                <p className="field-label">Pick a route</p>
+                <p className="field-label">{t('pickRoute')}</p>
                 {routes.map(route => (
                   <RouteCard
                     key={route.id}
@@ -572,7 +580,7 @@ export function RidePlanner({
                   className="btn-secondary text-sm"
                   style={{ opacity: isPending ? 0.5 : 1 }}
                 >
-                  {isPending ? '↺ Trying…' : '↺ Try other'}
+                  {isPending ? t('trying') : t('tryOther')}
                 </button>
                 <button
                   type="button"
@@ -580,7 +588,7 @@ export function RidePlanner({
                   disabled={isPending || !selectedRoute}
                   className="btn-secondary text-sm"
                 >
-                  ✎ Edit route
+                  {t('editRoute')}
                 </button>
               </div>
             </>
@@ -601,14 +609,14 @@ export function RidePlanner({
               {saveError && <p className="field-error">{saveError}</p>}
 
               <div>
-                <label className="field-label">Ride name</label>
+                <label className="field-label">{t('rideNameLabel')}</label>
                 <RideNameInput
                   suggestion={`${scheduleLabel ? `${scheduleLabel} ` : ''}${selectedRoute.label} (${selectedRoute.distance}km)`}
                 />
               </div>
 
               <button type="submit" className="btn-primary w-full">
-                Save ride →
+                {t('saveRide')}
               </button>
             </form>
           )}
@@ -637,7 +645,7 @@ export function RidePlanner({
               boxShadow:       '4px 4px 0px rgba(0,0,0,0.25)',
             }}
           >
-            👆 Click anywhere to set your start
+            {t('clickToStart')}
           </div>
         )}
 

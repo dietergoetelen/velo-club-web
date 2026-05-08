@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useTranslations } from 'next-intl';
 import { updateProfile } from '@/lib/actions/profile';
 import { FormButton } from '@/components/form-button';
 import { AvatarUpload } from '@/components/avatar-upload';
@@ -22,6 +23,7 @@ export function ProfileForm({
   email:      string;
   avatarUrl?: string;
 }) {
+  const t = useTranslations('profile');
   const [error, action] = useActionState(updateProfile, null);
 
   return (
@@ -30,33 +32,33 @@ export function ProfileForm({
         {error && <p className="field-error">{error}</p>}
 
         <div>
-          <label className="field-label">Name</label>
+          <label className="field-label">{t('nameLabel')}</label>
           <input
             type="text" disabled
             defaultValue={name}
             className="field-input opacity-60 cursor-not-allowed"
           />
-          <p className="text-xs text-ink-soft mt-1.5">Your name can&apos;t be changed.</p>
+          <p className="text-xs text-ink-soft mt-1.5">{t('nameHint')}</p>
         </div>
 
         <div>
-          <label className="field-label">Email</label>
+          <label className="field-label">{t('emailLabel')}</label>
           <input
             type="email" disabled
             defaultValue={email}
             className="field-input opacity-60 cursor-not-allowed"
           />
-          <p className="text-xs text-ink-soft mt-1.5">Email can&apos;t be changed yet.</p>
+          <p className="text-xs text-ink-soft mt-1.5">{t('emailHint')}</p>
         </div>
 
         <AvatarUpload
-          label="Profile photo"
+          label={t('photoLabel')}
           initialUrl={avatarUrl}
           initials={getInitials(name || email)}
           accent="var(--pink)"
         />
 
-        <FormButton label="Save changes →" loadingLabel="Saving…" />
+        <FormButton label={t('submit')} loadingLabel={t('submitLoading')} />
       </form>
     </div>
   );

@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { getPocketBase } from '@/lib/pocketbase';
 import { setToken, clearToken } from '@/lib/session';
 
@@ -8,12 +9,14 @@ export async function login(_prev: string | null, form: FormData): Promise<strin
   const email    = form.get('email')    as string;
   const password = form.get('password') as string;
 
+  const t = await getTranslations('errors');
+
   try {
     const pb   = getPocketBase();
     const auth = await pb.collection('users').authWithPassword(email, password);
     await setToken(auth.token);
   } catch {
-    return 'Invalid email or password.';
+    return t('invalidLogin');
   }
 
   redirect('/dashboard');
@@ -25,7 +28,9 @@ export async function register(_prev: string | null, form: FormData): Promise<st
   const password        = form.get('password')        as string;
   const passwordConfirm = form.get('passwordConfirm') as string;
 
-  if (password !== passwordConfirm) return 'Passwords do not match.';
+  const t = await getTranslations('errors');
+
+  if (password !== passwordConfirm) return t('passwordsMismatch');
 
   try {
     const pb = getPocketBase();
@@ -34,7 +39,7 @@ export async function register(_prev: string | null, form: FormData): Promise<st
     await setToken(auth.token);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : '';
-    return msg.includes('email') ? 'This email is already registered.' : 'Registration failed.';
+    return msg.includes('email') ? t('emailExists') : t('registrationFailed');
   }
 
   redirect('/dashboard');

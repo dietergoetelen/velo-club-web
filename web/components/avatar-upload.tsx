@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 type Props = {
   name?:       string;  // form field name for the file (default: 'avatar')
   removeName?: string;  // form field name for the remove flag (default: 'avatar_remove')
-  label?:      string;  // field label (default: 'Photo')
+  label?:      string;  // field label (default: translated 'Photo')
   initialUrl?: string;  // existing avatar URL when editing
   initials?:   string;  // shown when no avatar is set
   accent?:     string;  // background color for the placeholder
@@ -14,11 +15,12 @@ type Props = {
 export function AvatarUpload({
   name       = 'avatar',
   removeName = 'avatar_remove',
-  label      = 'Photo',
+  label,
   initialUrl,
   initials   = '?',
   accent     = '#FBBF24',
 }: Props) {
+  const t = useTranslations('avatar');
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview]         = useState<string | null>(null);
   const [removed, setRemoved]         = useState(false);
@@ -29,6 +31,7 @@ export function AvatarUpload({
   }, [preview]);
 
   const shownUrl = preview ?? (removed ? null : initialUrl ?? null);
+  const labelText = label ?? t('defaultLabel');
 
   function pickFile() {
     inputRef.current?.click();
@@ -39,7 +42,7 @@ export function AvatarUpload({
     setError(null);
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      setError('Image must be 5 MB or less.');
+      setError(t('tooLarge'));
       e.target.value = '';
       return;
     }
@@ -57,7 +60,7 @@ export function AvatarUpload({
 
   return (
     <div>
-      <label className="field-label">{label}</label>
+      <label className="field-label">{labelText}</label>
 
       <div className="flex items-center gap-5 mt-1">
         <div
@@ -77,18 +80,18 @@ export function AvatarUpload({
 
         <div className="flex flex-col gap-2">
           <button type="button" onClick={pickFile} className="btn-secondary text-sm">
-            {shownUrl ? 'Change photo' : 'Upload photo'}
+            {shownUrl ? t('changePhoto') : t('uploadPhoto')}
           </button>
           {shownUrl && (
             <button type="button" onClick={onRemove} className="btn-ghost text-xs">
-              Remove
+              {t('remove')}
             </button>
           )}
         </div>
       </div>
 
       {error && <p className="field-error mt-2">{error}</p>}
-      <p className="text-xs text-ink-soft mt-2">JPG, PNG, or WebP. Max 5 MB.</p>
+      <p className="text-xs text-ink-soft mt-2">{t('hint')}</p>
 
       <input
         ref={inputRef}

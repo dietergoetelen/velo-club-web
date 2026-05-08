@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { getPBWithToken } from '@/lib/pocketbase';
 import { getToken, getCurrentUser } from '@/lib/session';
 
@@ -16,6 +17,7 @@ export async function updateProfile(
   const user  = await getCurrentUser();
   if (!token || !user) redirect('/login');
 
+  const t  = await getTranslations('errors');
   const pb = getPBWithToken(token);
 
   const data: Record<string, unknown> = {};
@@ -29,7 +31,7 @@ export async function updateProfile(
   try {
     await pb.collection('users').update(user.id, data);
   } catch {
-    return 'Failed to save changes.';
+    return t('saveProfileFailed');
   }
 
   revalidatePath('/profile');

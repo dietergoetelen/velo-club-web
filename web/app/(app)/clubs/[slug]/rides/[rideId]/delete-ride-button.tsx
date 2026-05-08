@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { deleteRide } from '@/lib/actions/rides';
 
 export function DeleteRideButton({
@@ -11,11 +12,12 @@ export function DeleteRideButton({
   rideName: string;
   slug:     string;
 }) {
+  const t = useTranslations('rides.detail');
   return (
     <form
       action={deleteRide}
       onSubmit={e => {
-        if (!confirm(`Delete "${rideName}"? This can't be undone.`)) {
+        if (!confirm(t('deleteConfirm', { name: rideName }))) {
           e.preventDefault();
         }
       }}
@@ -32,7 +34,7 @@ export function DeleteRideButton({
           color:           'var(--ink)',
         }}
       >
-        Delete ride
+        {t('deleteRide')}
       </button>
     </form>
   );

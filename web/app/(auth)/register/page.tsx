@@ -2,64 +2,66 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { useTranslations } from 'next-intl';
 import { register } from '@/lib/actions/auth';
 import { FormButton } from '@/components/form-button';
 
 export default function RegisterPage() {
+  const t = useTranslations('auth.register');
   const [error, action] = useActionState(register, null);
   return (
     <div>
       <h1 className="font-heading font-black text-3xl text-ink mb-1 tracking-tight">
-        Create account
+        {t('title')}
       </h1>
       <p className="text-ink-soft text-sm mb-8">
-        Join Zoesh and find your crew.
+        {t('subtitle')}
       </p>
 
       <form action={action} className="space-y-4">
         {error && <p className="field-error">{error}</p>}
 
         <div>
-          <label className="field-label">Name</label>
+          <label className="field-label">{t('nameLabel')}</label>
           <input
             name="name" type="text" required autoComplete="name"
-            className="field-input" placeholder="Your name"
+            className="field-input" placeholder={t('namePlaceholder')}
           />
         </div>
 
         <div>
-          <label className="field-label">Email</label>
+          <label className="field-label">{t('emailLabel')}</label>
           <input
             name="email" type="email" required autoComplete="email"
-            className="field-input" placeholder="you@example.com"
+            className="field-input" placeholder={t('emailPlaceholder')}
           />
         </div>
 
         <div>
-          <label className="field-label">Password</label>
+          <label className="field-label">{t('passwordLabel')}</label>
           <input
             name="password" type="password" required minLength={8}
-            className="field-input" placeholder="At least 8 characters"
+            className="field-input" placeholder={t('passwordPlaceholder')}
           />
         </div>
 
         <div>
-          <label className="field-label">Confirm password</label>
+          <label className="field-label">{t('confirmLabel')}</label>
           <input
             name="passwordConfirm" type="password" required minLength={8}
-            className="field-input" placeholder="••••••••"
+            className="field-input" placeholder={t('confirmPlaceholder')}
           />
         </div>
 
         <div className="pt-2">
-          <FormButton label="Create account →" loadingLabel="Creating…" />
+          <FormButton label={t('submit')} loadingLabel={t('submitLoading')} />
         </div>
       </form>
 
       <p className="mt-7 text-center text-sm text-ink-soft">
-        Already have an account?{' '}
+        {t('hasAccount')}{' '}
         <Link href="/login" className="font-black text-accent hover:underline">
-          Sign in
+          {t('signIn')}
         </Link>
       </p>
     </div>

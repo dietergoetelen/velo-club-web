@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { updateRideRoute } from '@/lib/actions/rides';
 import { RouteEditPanel } from '@/components/route-edit-panel';
 
@@ -26,6 +27,7 @@ export function RideEdit({
   distance:    number;
   elevation:   number;
 }) {
+  const t = useTranslations('rides.edit');
   const [saveError, saveAction] = useActionState(updateRideRoute, null);
 
   return (
@@ -43,7 +45,7 @@ export function RideEdit({
             ← {clubName} · {rideName}
           </Link>
           <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
-            Edit route
+            {t('title')}
           </h1>
         </>
       }
@@ -58,13 +60,13 @@ export function RideEdit({
           {saveError && <p className="field-error">{saveError}</p>}
 
           <button type="submit" disabled={!s.canSave} className="btn-primary w-full">
-            Save changes →
+            {t('saveChanges')}
           </button>
         </form>
       )}
       footer={
         <p className="text-xs text-ink-soft mt-2">
-          Original: {distance} km · {elevation} m ↑
+          {t('original', { distance, elevation })}
         </p>
       }
     />

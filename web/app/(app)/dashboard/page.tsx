@@ -1,15 +1,16 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/session';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
 import type { Club, ClubMember, JoinRequest } from '@/lib/types';
 
-function greeting() {
+function greetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'greetingMorning';
+  if (h < 18) return 'greetingAfternoon';
+  return 'greetingEvening';
 }
 
 /* Cycles through our four palette colors for club accent dots */
@@ -18,6 +19,8 @@ const ACCENT_COLORS = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
+
+  const t = await getTranslations('dashboard');
 
   const pb          = await getAuthenticatedPB();
   const memberships = await getMemberships(user.id);
@@ -79,14 +82,14 @@ export default async function DashboardPage() {
 
         {/* Greeting text */}
         <div className="max-w-lg">
-          <p className="eyebrow mb-3">{greeting()}</p>
+          <p className="eyebrow mb-3">{t(greetingKey())}</p>
           <h1 className="font-heading font-black text-5xl md:text-6xl text-ink tracking-tight leading-[1.05]">
             {firstName}<span className="text-accent">.</span>
           </h1>
           <p className="mt-4 text-ink-soft text-lg">
             {myClubs.length === 0
-              ? 'Ready to find your crew? Join or create a club below.'
-              : `You're rolling with ${myClubs.length} club${myClubs.length !== 1 ? 's' : ''}. Let's ride! 🚴`}
+              ? t('introNoClubs')
+              : t('introWithClubs', { count: myClubs.length })}
           </p>
         </div>
       </div>
@@ -95,7 +98,7 @@ export default async function DashboardPage() {
       <section>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <p className="eyebrow">My clubs</p>
+            <p className="eyebrow">{t('myClubsHeading')}</p>
             <span
               className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center"
               style={{
@@ -108,7 +111,7 @@ export default async function DashboardPage() {
             </span>
           </div>
           <Link href="/clubs/new" className="btn-primary">
-            + New club
+            {t('newClub')}
           </Link>
         </div>
 
@@ -129,8 +132,8 @@ export default async function DashboardPage() {
                 style={{ backgroundColor: 'var(--mint)', border: '2px solid var(--ink)', boxShadow: '3px 3px 0px var(--ink)' }}
               />
             </div>
-            <p className="font-heading font-bold text-xl text-ink">No clubs yet!</p>
-            <p className="text-ink-soft text-sm mt-1.5">Create one or request to join a club below.</p>
+            <p className="font-heading font-bold text-xl text-ink">{t('noClubsTitle')}</p>
+            <p className="text-ink-soft text-sm mt-1.5">{t('noClubsHint')}</p>
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
@@ -156,8 +159,8 @@ export default async function DashboardPage() {
                     {club.name}
                   </p>
                   {roleFor(club.id) === 'captain'
-                    ? <span className="badge-brand shrink-0">captain</span>
-                    : <span className="badge-neutral shrink-0">member</span>
+                    ? <span className="badge-brand shrink-0">{t('captainBadge')}</span>
+                    : <span className="badge-neutral shrink-0">{t('memberBadge')}</span>
                   }
                 </div>
 
@@ -166,7 +169,7 @@ export default async function DashboardPage() {
                 )}
 
                 <p className="mt-4 text-xs font-black text-ink-soft group-hover:text-accent transition-colors duration-200 uppercase tracking-wide">
-                  View club →
+                  {t('viewClub')}
                 </p>
               </Link>
             ))}
@@ -178,7 +181,7 @@ export default async function DashboardPage() {
       {otherClubs.length > 0 && (
         <section>
           <div className="flex items-center gap-3 mb-6">
-            <p className="eyebrow">Discover clubs</p>
+            <p className="eyebrow">{t('discoverHeading')}</p>
             <span
               className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center"
               style={{
@@ -207,7 +210,7 @@ export default async function DashboardPage() {
                     )}
                   </div>
                   {isPending
-                    ? <span className="badge-neutral shrink-0">Pending</span>
+                    ? <span className="badge-neutral shrink-0">{t('pendingBadge')}</span>
                     : <JoinRequestForm clubId={club.id} slug={club.slug} />
                   }
                 </div>

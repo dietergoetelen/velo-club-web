@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
 import type { Club } from '@/lib/types';
@@ -14,6 +15,7 @@ export function DiscoverClubs({
   clubs:          Club[];
   pendingClubIds: Set<string>;
 }) {
+  const t = useTranslations('clubs.list');
   const [query,    setQuery]    = useState('');
   const [showAll,  setShowAll]  = useState(false);
 
@@ -27,7 +29,7 @@ export function DiscoverClubs({
   return (
     <section>
       <div className="flex items-center gap-3 mb-4">
-        <p className="eyebrow">Discover clubs</p>
+        <p className="eyebrow">{t('discoverHeading')}</p>
         <span
           className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center"
           style={{
@@ -43,14 +45,14 @@ export function DiscoverClubs({
       {/* Search */}
       <input
         type="search"
-        placeholder="Search clubs…"
+        placeholder={t('searchPlaceholder')}
         value={query}
         onChange={e => { setQuery(e.target.value); setShowAll(false); }}
         className="field-input mb-4"
       />
 
       {filtered.length === 0 ? (
-        <p className="text-ink-soft text-sm px-1">No clubs match "{query}".</p>
+        <p className="text-ink-soft text-sm px-1">{t('noMatch', { query })}</p>
       ) : (
         <>
           <div className="card overflow-hidden">
@@ -69,7 +71,7 @@ export function DiscoverClubs({
                     )}
                   </div>
                   {isPending
-                    ? <span className="badge-neutral shrink-0">Pending</span>
+                    ? <span className="badge-neutral shrink-0">{t('pendingBadge')}</span>
                     : <JoinRequestForm clubId={club.id} slug={club.slug} />
                   }
                 </div>
@@ -83,7 +85,7 @@ export function DiscoverClubs({
               onClick={() => setShowAll(true)}
               className="btn-secondary w-full mt-3 text-sm"
             >
-              Show {filtered.length - INITIAL_LIMIT} more clubs
+              {t('showMore', { count: filtered.length - INITIAL_LIMIT })}
             </button>
           )}
         </>

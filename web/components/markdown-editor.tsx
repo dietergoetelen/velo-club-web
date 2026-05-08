@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -14,6 +15,7 @@ interface Props {
 type Mode = 'write' | 'preview';
 
 export function MarkdownEditor({ name, defaultValue, rows = 10, placeholder }: Props) {
+  const t = useTranslations('markdown');
   const [value, setValue] = useState<string>(defaultValue ?? '');
   const [mode,  setMode]  = useState<Mode>('write');
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -55,11 +57,11 @@ export function MarkdownEditor({ name, defaultValue, rows = 10, placeholder }: P
   function insertLink() {
     const ta = ref.current;
     if (!ta || mode !== 'write') return;
-    const url = window.prompt('Link URL', 'https://') || '';
+    const url = window.prompt(t('linkPrompt'), 'https://') || '';
     if (!url) return;
     const start = ta.selectionStart;
     const end   = ta.selectionEnd;
-    const sel   = value.slice(start, end) || 'link text';
+    const sel   = value.slice(start, end) || t('linkText');
     const insert = `[${sel}](${url})`;
     const next   = value.slice(0, start) + insert + value.slice(end);
     applyEdit(next, start + 1, start + 1 + sel.length);
@@ -70,18 +72,18 @@ export function MarkdownEditor({ name, defaultValue, rows = 10, placeholder }: P
       <input type="hidden" name={name} value={value} />
 
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <div className="flex flex-wrap gap-1.5" aria-label="Formatting">
-          <ToolBtn onClick={() => wrap('**', '**', 'bold text')}     title="Bold"><b>B</b></ToolBtn>
-          <ToolBtn onClick={() => wrap('_',  '_',  'italic text')}   title="Italic"><i>I</i></ToolBtn>
-          <ToolBtn onClick={() => prefixLines('## ', 'Heading')}     title="Heading">H</ToolBtn>
-          <ToolBtn onClick={insertLink}                              title="Link">🔗</ToolBtn>
-          <ToolBtn onClick={() => prefixLines('- ', 'list item')}    title="Bulleted list">•</ToolBtn>
-          <ToolBtn onClick={() => prefixLines('1. ', 'numbered item')} title="Numbered list">1.</ToolBtn>
-          <ToolBtn onClick={() => prefixLines('> ', 'quote')}        title="Quote">❝</ToolBtn>
+        <div className="flex flex-wrap gap-1.5" aria-label={t('formattingLabel')}>
+          <ToolBtn onClick={() => wrap('**', '**', t('boldSample'))}     title={t('boldTitle')}><b>B</b></ToolBtn>
+          <ToolBtn onClick={() => wrap('_',  '_',  t('italicSample'))}   title={t('italicTitle')}><i>I</i></ToolBtn>
+          <ToolBtn onClick={() => prefixLines('## ', t('headingSample'))} title={t('headingTitle')}>H</ToolBtn>
+          <ToolBtn onClick={insertLink}                                  title={t('linkTitle')}>🔗</ToolBtn>
+          <ToolBtn onClick={() => prefixLines('- ', t('listSample'))}    title={t('bulletTitle')}>•</ToolBtn>
+          <ToolBtn onClick={() => prefixLines('1. ', t('numberedSample'))} title={t('numberedTitle')}>1.</ToolBtn>
+          <ToolBtn onClick={() => prefixLines('> ', t('quoteSample'))}   title={t('quoteTitle')}>❝</ToolBtn>
         </div>
-        <div className="flex gap-1" role="tablist" aria-label="Editor mode">
-          <TabBtn active={mode === 'write'}   onClick={() => setMode('write')}>Write</TabBtn>
-          <TabBtn active={mode === 'preview'} onClick={() => setMode('preview')}>Preview</TabBtn>
+        <div className="flex gap-1" role="tablist" aria-label={t('modeLabel')}>
+          <TabBtn active={mode === 'write'}   onClick={() => setMode('write')}>{t('write')}</TabBtn>
+          <TabBtn active={mode === 'preview'} onClick={() => setMode('preview')}>{t('preview')}</TabBtn>
         </div>
       </div>
 
@@ -99,18 +101,18 @@ export function MarkdownEditor({ name, defaultValue, rows = 10, placeholder }: P
           {value.trim() ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
           ) : (
-            <p className="text-ink-soft text-sm italic">Nothing to preview yet.</p>
+            <p className="text-ink-soft text-sm italic">{t('nothingToPreview')}</p>
           )}
         </div>
       )}
 
       <p className="text-xs text-ink-soft mt-2 leading-relaxed">
-        Tip: use the toolbar, or type{' '}
+        {t('tipPrefix')}
         <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>**bold**</code>,{' '}
         <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>_italic_</code>,{' '}
         <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>## heading</code>,{' '}
         <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>- list</code>,{' '}
-        <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>[link](url)</code>.
+        <code className="px-1 rounded" style={{ backgroundColor: 'var(--muted)' }}>[link](url)</code>{t('tipSuffix')}
       </p>
     </div>
   );

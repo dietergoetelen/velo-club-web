@@ -1,11 +1,13 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useTranslations } from 'next-intl';
 import { createClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
 import { AvatarUpload } from '@/components/avatar-upload';
 
 export default function NewClubPage() {
+  const t = useTranslations('clubs.create');
   const [error, action] = useActionState(createClub, null);
 
   return (
@@ -37,12 +39,12 @@ export default function NewClubPage() {
         />
 
         <div>
-          <p className="eyebrow mb-2">Clubs</p>
+          <p className="eyebrow mb-2">{t('eyebrow')}</p>
           <h1 className="font-heading font-black text-4xl text-ink tracking-tight">
-            Start a new club
+            {t('title')}
           </h1>
           <p className="text-ink-soft mt-2">
-            Give it a name, add a description, and you're the captain.
+            {t('subtitle')}
           </p>
         </div>
       </div>
@@ -52,29 +54,29 @@ export default function NewClubPage() {
           {error && <p className="field-error">{error}</p>}
 
           <div>
-            <label className="field-label">Club name</label>
+            <label className="field-label">{t('nameLabel')}</label>
             <input
               name="name" type="text" required
-              placeholder="e.g. Les Cyclistes de Liège"
+              placeholder={t('namePlaceholder')}
               className="field-input"
             />
           </div>
 
           <div>
             <label className="field-label">
-              Description
-              <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">(optional)</span>
+              {t('descriptionLabel')}
+              <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">{t('descriptionOptional')}</span>
             </label>
             <textarea
               name="description" rows={3}
-              placeholder="A short description of your club…"
+              placeholder={t('descriptionPlaceholder')}
               className="field-input resize-none"
             />
           </div>
 
-          <AvatarUpload label="Club photo" accent="var(--mint)" />
+          <AvatarUpload label={t('photoLabel')} accent="var(--mint)" />
 
-          <FormButton label="Create club →" loadingLabel="Creating…" />
+          <FormButton label={t('submit')} loadingLabel={t('submitLoading')} />
         </form>
       </div>
     </div>

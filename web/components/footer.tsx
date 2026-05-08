@@ -1,12 +1,15 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 
-const NAV = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Clubs',     href: '/clubs'     },
-  { label: 'Profile',   href: '/profile'   },
-];
+export async function Footer() {
+  const t = await getTranslations('footer');
 
-export function Footer() {
+  const NAV = [
+    { label: t('navDashboard'), href: '/dashboard' },
+    { label: t('navClubs'),     href: '/clubs'     },
+    { label: t('navProfile'),   href: '/profile'   },
+  ];
+
   return (
     <footer
       className="relative mt-24 bg-accent text-white overflow-hidden"
@@ -43,13 +46,12 @@ export function Footer() {
               />
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-white/75">
-              Plan rides, ride together, log the miles. Built for clubs that
-              prefer the long way home.
+              {t('tagline')}
             </p>
           </div>
 
           <div>
-            <p className="eyebrow text-white/60 mb-4">Explore</p>
+            <p className="eyebrow text-white/60 mb-4">{t('explore')}</p>
             <ul className="space-y-2">
               {NAV.map(item => (
                 <li key={item.href}>
@@ -71,7 +73,7 @@ export function Footer() {
           style={{ borderTop: '2px dashed rgba(255,255,255,0.25)' }}
         >
           <p className="text-xs text-white/55">
-            © {new Date().getFullYear()} Zoesh · Made with two wheels and a tailwind.
+            {t('copyright', { year: new Date().getFullYear() })}
           </p>
         </div>
 

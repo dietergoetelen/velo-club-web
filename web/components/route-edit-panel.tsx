@@ -2,17 +2,23 @@
 
 import { type ReactNode, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { useRouteEdit } from '@/lib/route-edit';
+
+function MapLoading() {
+  const t = useTranslations('common');
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-muted">
+      <p className="text-ink-soft text-sm font-bold animate-pulse">{t('loadingMap')}</p>
+    </div>
+  );
+}
 
 const RouteMap = dynamic(
   () => import('@/app/(app)/clubs/[slug]/rides/new/route-map'),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-muted">
-        <p className="text-ink-soft text-sm font-bold animate-pulse">Loading map…</p>
-      </div>
-    ),
+    loading: MapLoading,
   },
 );
 
@@ -54,6 +60,7 @@ export function RouteEditPanel({
   saveSlot:         (s: RouteEditState) => ReactNode;
   footer?:          ReactNode;
 }) {
+  const t = useTranslations('routeEdit');
   const edit = useRouteEdit({
     start,
     polyline:        initialPolyline,
@@ -101,11 +108,11 @@ export function RouteEditPanel({
             <p className="font-bold text-ink tabular-nums">
               {edit.distance} km · {edit.elevation} m ↑
               {edit.isPending && (
-                <span className="ml-2 text-xs text-ink-soft font-normal">recalculating…</span>
+                <span className="ml-2 text-xs text-ink-soft font-normal">{t('recalculating')}</span>
               )}
             </p>
             <p className="text-xs text-ink-soft mt-1">
-              Click the map to add a waypoint, drag a marker to move it, drag rows in the list to reorder, use ✕ to remove.
+              {t('hint')}
             </p>
           </div>
 
@@ -158,7 +165,7 @@ export function RouteEditPanel({
                       type="button"
                       onClick={() => edit.deleteWaypoint(wp.id)}
                       className="text-ink-soft hover:text-ink hover:bg-[var(--line)] font-black px-2.5 py-1 -mr-1 rounded leading-none text-base"
-                      aria-label={`Remove waypoint ${i + 1}`}
+                      aria-label={t('removeWaypointAria', { n: i + 1 })}
                     >
                       ✕
                     </button>

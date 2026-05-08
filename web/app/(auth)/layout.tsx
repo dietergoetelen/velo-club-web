@@ -1,4 +1,12 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+import { Fragment } from 'react';
+import { getTranslations } from 'next-intl/server';
+
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const t = await getTranslations('auth.layout');
+
+  const headlineLines = t('headline').split('\n');
+  const taglineLines  = t('tagline').split('\n');
+
   return (
     <div className="min-h-screen grid lg:grid-cols-[440px_1fr]">
 
@@ -62,11 +70,20 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative z-10">
           <p className="font-heading font-black text-5xl text-white leading-[1.05] tracking-tight">
-            Your cycling<br />club,<br />organised.
+            {headlineLines.map((line, i) => (
+              <Fragment key={i}>
+                {line}
+                {i < headlineLines.length - 1 && <br />}
+              </Fragment>
+            ))}
           </p>
           <p className="mt-5 text-base leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Plan routes, coordinate group<br />
-            rides, and manage your crew.
+            {taglineLines.map((line, i) => (
+              <Fragment key={i}>
+                {line}
+                {i < taglineLines.length - 1 && <br />}
+              </Fragment>
+            ))}
           </p>
         </div>
 

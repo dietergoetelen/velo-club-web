@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { SettingsForm } from './settings-form';
@@ -10,6 +11,8 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const user      = await getCurrentUser();
   if (!user) redirect('/login');
+
+  const t = await getTranslations('clubs.settings');
 
   const pb = await getAuthenticatedPB();
 
@@ -36,11 +39,11 @@ export default async function ClubSettingsPage({ params }: { params: Promise<{ s
     <div className="max-w-lg mx-auto space-y-8">
 
       <div>
-        <p className="eyebrow mb-2">Settings</p>
+        <p className="eyebrow mb-2">{t('eyebrow')}</p>
         <h1 className="font-heading font-black text-4xl text-ink tracking-tight">
           {club.name}
         </h1>
-        <p className="text-ink-soft mt-1">Only you (the captain) can edit these.</p>
+        <p className="text-ink-soft mt-1">{t('subtitle')}</p>
       </div>
 
       <SettingsForm

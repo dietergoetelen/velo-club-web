@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { useTranslations } from 'next-intl';
 import { updateClub } from '@/lib/actions/clubs';
 import { FormButton } from '@/components/form-button';
 import { AvatarUpload } from '@/components/avatar-upload';
@@ -17,6 +18,7 @@ function getInitials(name: string) {
 }
 
 export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: string }) {
+  const t = useTranslations('clubs.settings');
   const [error, action] = useActionState(updateClub, null);
 
   return (
@@ -28,7 +30,7 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
         {error && <p className="field-error">{error}</p>}
 
         <div>
-          <label className="field-label">Club name</label>
+          <label className="field-label">{t('nameLabel')}</label>
           <input
             name="name" type="text" required
             defaultValue={club.name}
@@ -38,22 +40,22 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
 
         <div>
           <label className="field-label">
-            About this club
-            <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">(optional)</span>
+            {t('aboutLabel')}
+            <span className="text-ink-soft font-normal normal-case tracking-normal ml-1.5 text-xs">{t('aboutOptional')}</span>
           </label>
           <p className="text-xs text-ink-soft mb-2 -mt-1">
-            Welcome new members, set expectations, share what makes your club tick.
+            {t('aboutHint')}
           </p>
           <MarkdownEditor
             name="description"
             defaultValue={club.description}
             rows={10}
-            placeholder="Tell people about your club — pace, vibe, where you ride…"
+            placeholder={t('aboutPlaceholder')}
           />
         </div>
 
         <AvatarUpload
-          label="Club photo"
+          label={t('photoLabel')}
           initialUrl={avatarUrl}
           initials={getInitials(club.name)}
           accent="var(--amber)"
@@ -74,14 +76,14 @@ export function SettingsForm({ club, avatarUrl }: { club: Club; avatarUrl?: stri
             style={{ accentColor: 'var(--accent)' }}
           />
           <span>
-            <span className="field-label !mb-0 block">Recurring schedules</span>
+            <span className="field-label !mb-0 block">{t('schedulesLabel')}</span>
             <span className="text-xs text-ink-soft block mt-0.5">
-              Define weekly ride slots (e.g. A/B/C groups). Captains can pick one when planning a ride.
+              {t('schedulesHint')}
             </span>
           </span>
         </label>
 
-        <FormButton label="Save changes →" loadingLabel="Saving…" />
+        <FormButton label={t('submit')} loadingLabel={t('submitLoading')} />
       </form>
     </div>
   );
