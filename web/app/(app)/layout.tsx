@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getCurrentUser } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { logout } from '@/lib/actions/auth';
+import { Footer } from '@/components/footer';
 
 function getInitials(nameOrEmail: string) {
   return nameOrEmail
@@ -19,7 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const displayName = user.name || user.email.split('@')[0];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
 
       <header className="sticky top-0 z-20 bg-accent" style={{ borderBottom: '2px solid var(--ink)' }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -68,9 +69,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-10">
         {children}
       </main>
+
+      <Footer />
 
     </div>
   );
