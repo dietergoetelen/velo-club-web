@@ -114,7 +114,7 @@ export function RouteEditPanel({
           fixed inset-x-0 bottom-0 z-[1100] rounded-t-2xl
           border-t-2 border-ink shadow-[0_-4px_0_var(--ink)]
           transition-[height] duration-300 ease-out
-          ${sheetOpen ? 'h-[85vh]' : 'h-[150px]'}
+          ${sheetOpen ? 'h-[85svh]' : 'h-[150px]'}
           md:relative md:inset-auto md:z-auto md:rounded-none md:shadow-none
           md:w-[400px] md:shrink-0 md:h-full md:bg-paper
           md:border-t-0 md:border-r-2
