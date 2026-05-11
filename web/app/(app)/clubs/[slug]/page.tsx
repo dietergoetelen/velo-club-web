@@ -399,7 +399,7 @@ export default async function ClubPage({
             {isCaptain && (
               <p className="text-ink-soft text-sm mt-1.5">
                 {tDetail.rich('noRidesHint', {
-                  link: () => <span className="font-bold text-accent">{tDetail('noRidesPlanLink')}</span>,
+                  link: (chunks) => <span className="font-bold text-accent">{chunks}</span>,
                 })}
               </p>
             )}
@@ -460,67 +460,64 @@ export default async function ClubPage({
               const canPromote    = isCaptain && !isThisCaptain && m.user !== user.id;
 
               return (
-                <li key={m.id} className="relative group">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black overflow-hidden shrink-0 transition-transform group-hover:-translate-y-0.5"
-                    style={{
-                      backgroundColor: u?.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
-                      border:    '2px solid var(--ink)',
-                      boxShadow: isThisCaptain
-                        ? '3px 3px 0px var(--amber), 5px 5px 0px var(--ink)'
-                        : '2px 2px 0px var(--ink)',
-                      color:     'var(--ink)',
-                    }}
-                  >
-                    {u?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={fileUrl('users', m.user, u.avatar, '100x100')}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      getInitials(displayName)
-                    )}
-                  </div>
-
-                  {isThisCaptain && (
-                    <span
-                      aria-label={tMembers('captainAria')}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black pointer-events-none"
-                      style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
-                    >
-                      ★
-                    </span>
-                  )}
-
-                  <div
-                    className="absolute left-1/2 top-full -translate-x-1/2 pt-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto"
-                  >
+                <li key={m.id} className="flex flex-col items-center gap-2 w-28">
+                  <div className="relative">
                     <div
-                      className="px-2.5 py-1 rounded text-xs font-bold text-white whitespace-nowrap"
-                      style={{ backgroundColor: 'var(--ink)' }}
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-black overflow-hidden shrink-0"
+                      style={{
+                        backgroundColor: u?.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
+                        border:    '2px solid var(--ink)',
+                        boxShadow: isThisCaptain
+                          ? '3px 3px 0px var(--amber), 5px 5px 0px var(--ink)'
+                          : '2px 2px 0px var(--ink)',
+                        color:     'var(--ink)',
+                      }}
                     >
-                      {displayName}
-                      {isThisCaptain && (
-                        <span className="ml-1.5" style={{ color: 'var(--amber)' }}>· {tMembers('captainTooltip')}</span>
+                      {u?.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={fileUrl('users', m.user, u.avatar, '100x100')}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getInitials(displayName)
                       )}
                     </div>
-                    {canPromote && (
-                      <form action={promoteToCaptain} className="mt-1.5 flex justify-center">
-                        <input type="hidden" name="memberId" value={m.id} />
-                        <input type="hidden" name="clubId"   value={club.id} />
-                        <input type="hidden" name="slug"     value={slug} />
-                        <button
-                          type="submit"
-                          className="px-2.5 py-1 rounded text-[11px] font-black whitespace-nowrap"
-                          style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
-                        >
-                          {tMembers('makeCaptain')}
-                        </button>
-                      </form>
+
+                    {isThisCaptain && (
+                      <span
+                        aria-label={tMembers('captainAria')}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-black pointer-events-none"
+                        style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', color: 'var(--ink)' }}
+                      >
+                        ★
+                      </span>
                     )}
                   </div>
+
+                  <p
+                    className="text-xs font-bold text-ink text-center leading-tight w-full truncate"
+                    title={displayName}
+                  >
+                    {displayName}
+                  </p>
+
+                  {canPromote && (
+                    <form action={promoteToCaptain} className="w-full">
+                      <input type="hidden" name="memberId" value={m.id} />
+                      <input type="hidden" name="clubId"   value={club.id} />
+                      <input type="hidden" name="slug"     value={slug} />
+                      <button
+                        type="submit"
+                        className="w-full inline-flex items-center justify-center gap-1 px-2 py-1 rounded text-[11px] font-black"
+                        style={{ backgroundColor: 'var(--amber)', border: '2px solid var(--ink)', boxShadow: '2px 2px 0px var(--ink)', color: 'var(--ink)' }}
+                      >
+                        <span aria-hidden>★</span>
+                        <span>{tMembers('makeCaptain')}</span>
+                      </button>
+                    </form>
+                  )}
                 </li>
               );
             })}

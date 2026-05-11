@@ -121,14 +121,12 @@
       "upcomingRides": "Aankomende ritten",
       "planRide": "+ Plan een rit",
       "noRidesTitle": "Nog geen ritten gepland.",
-      "noRidesHint": "Klik op {link} om er een op de kalender te zetten!",
-      "noRidesPlanLink": "+ Plan een rit"
+      "noRidesHint": "Klik op <link>+ Plan een rit</link> om er een op de kalender te zetten!"
     },
     "members": {
       "heading": "Leden",
-      "captainTooltip": "kapitein",
       "captainAria": "Kapitein",
-      "makeCaptain": "★ Maak kapitein",
+      "makeCaptain": "Maak kapitein",
       "fallbackName": "Lid"
     },
     "join": {
