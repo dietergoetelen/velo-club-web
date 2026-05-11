@@ -13,6 +13,7 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RideRoute } from '@/lib/types';
+import DirectionArrows from '@/lib/direction-arrows';
 
 type StartPos = { lat: number; lng: number };
 type Waypoint = { id: string; lat: number; lng: number };
@@ -170,12 +171,21 @@ export default function RouteMap({
         );
       })}
 
+      {/* ── Direction arrows on the selected route only (avoid clutter) ── */}
+      {!editing && (() => {
+        const sel = routes.find(r => r.id === selectedRouteId);
+        return sel ? <DirectionArrows coordinates={sel.coordinates} /> : null;
+      })()}
+
       {/* ── Edit-mode polyline ── */}
       {editing && editPolyline && editPolyline.length > 0 && (
-        <Polyline
-          positions={editPolyline}
-          pathOptions={{ color: '#8B5CF6', weight: 6, opacity: 1 }}
-        />
+        <>
+          <Polyline
+            positions={editPolyline}
+            pathOptions={{ color: '#8B5CF6', weight: 6, opacity: 1 }}
+          />
+          <DirectionArrows coordinates={editPolyline} />
+        </>
       )}
 
       {/* ── Start marker ── amber circle, matches design system ── */}

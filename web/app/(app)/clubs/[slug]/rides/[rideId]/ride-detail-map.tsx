@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import DirectionArrows from '@/lib/direction-arrows';
 
 type Props = {
   coordinates: [number, number][];  // [lat, lng]
@@ -38,10 +39,13 @@ export default function RideDetailMap({ coordinates }: Props) {
       <BoundsFitter coordinates={coordinates} />
 
       {coordinates.length > 0 && (
-        <Polyline
-          positions={coordinates}
-          pathOptions={{ color: '#8B5CF6', weight: 5, opacity: 1 }}
-        />
+        <>
+          <Polyline
+            positions={coordinates}
+            pathOptions={{ color: '#8B5CF6', weight: 5, opacity: 1 }}
+          />
+          <DirectionArrows coordinates={coordinates} />
+        </>
       )}
 
       {start && (
