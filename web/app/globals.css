@@ -51,6 +51,10 @@ body {
   background-size: 32px 32px;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  /* Prevent stray sub-pixel overflow from becoming a horizontal scroll on
+     mobile (iOS Safari/Chrome especially). `clip` instead of `hidden` so we
+     don't create a scroll container that would break sticky/fixed children. */
+  overflow-x: clip;
 }
 
 /* ─── Animations ─────────────────────────────────────────────────────────── */
