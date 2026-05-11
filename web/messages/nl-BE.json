@@ -188,7 +188,11 @@
       "gpxHint": "Importeer in Garmin Connect als koers.",
       "editRoute": "✎ Bewerk route",
       "deleteRide": "Rit verwijderen",
-      "deleteConfirm": "\"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt."
+      "deleteConfirm": "\"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "expandPanel": "Open paneel",
+      "collapsePanel": "Sluit paneel",
+      "tapForMap": "Toon kaart",
+      "tapForDetails": "Toon details"
     },
     "create": {
       "title": "Plan een rit",
@@ -223,6 +227,10 @@
       "backToRoutes": "← Terug naar routes",
       "editRouteTitle": "Route bewerken",
       "clickToStart": "👆 Klik ergens om je start te kiezen",
+      "expandPanel": "Open paneel",
+      "collapsePanel": "Sluit paneel",
+      "tapForMap": "Toon kaart",
+      "tapForDetails": "Toon details",
       "pinch": "{m}m bocht",
       "pinchTitle": "Route plooit binnen 25m van zichzelf na {m}m rijden",
       "customLabel": "Eigen"
@@ -237,7 +245,11 @@
   "routeEdit": {
     "recalculating": "herberekenen…",
     "hint": "Klik op de kaart om een waypoint toe te voegen, sleep een marker om die te verplaatsen, sleep rijen in de lijst om te herschikken, gebruik ✕ om te verwijderen.",
-    "removeWaypointAria": "Verwijder waypoint {n}"
+    "removeWaypointAria": "Verwijder waypoint {n}",
+    "expandPanel": "Open paneel",
+    "collapsePanel": "Sluit paneel",
+    "tapForMap": "Toon kaart",
+    "tapForDetails": "Toon details"
   },
   "markdown": {
     "formattingLabel": "Opmaak",
