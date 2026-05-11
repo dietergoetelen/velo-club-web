@@ -121,7 +121,11 @@
       "upcomingRides": "Aankomende ritten",
       "planRide": "+ Plan een rit",
       "noRidesTitle": "Nog geen ritten gepland.",
-      "noRidesHint": "Klik op <link>+ Plan een rit</link> om er een op de kalender te zetten!"
+      "noRidesHint": "Klik op <link>+ Plan een rit</link> om er een op de kalender te zetten!",
+      "viewPastRides": "Bekijk {count, plural, =1 {1 voorbije rit} other {# voorbije ritten}} →",
+      "pastRidesTitle": "Voorbije ritten",
+      "pastRidesEmpty": "Nog geen voorbije ritten.",
+      "backToClub": "← Terug naar club"
     },
     "members": {
       "heading": "Leden",

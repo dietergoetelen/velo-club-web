@@ -7,6 +7,8 @@ import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/a
 import { JoinRequestForm } from './join-request-form';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import { ClubIntro } from '@/components/club-intro';
+import { RideCard } from '@/components/ride-card';
+import { startOfTodayIso } from '@/lib/dates';
 import { DAY_NAMES, compareSchedules } from '@/lib/schedules';
 import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
 
@@ -21,18 +23,6 @@ function getInitials(nameOrEmail: string) {
     .slice(0, 2)
     .map(s => s[0]?.toUpperCase() ?? '')
     .join('');
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('nl-BE', {
-    weekday: 'short', day: 'numeric', month: 'short',
-  });
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('nl-BE', {
-    hour: '2-digit', minute: '2-digit', hour12: false,
-  });
 }
 
 interface DayGroup {
@@ -69,72 +59,6 @@ function DayGroupHeader({ date }: { date: Date }) {
     <p className="font-heading font-black text-sm text-ink uppercase tracking-wide">
       {DAY_NAMES[date.getDay()]} · {date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}
     </p>
-  );
-}
-
-function RideCard({
-  ride,
-  slug,
-  index,
-  scheduleLabel,
-  attendees,
-}: {
-  ride:           Route;
-  slug:           string;
-  index:          number;
-  scheduleLabel?: string;
-  attendees:      StackedUser[];
-}) {
-  return (
-    <Link
-      href={`/clubs/${slug}/rides/${ride.id}`}
-      className="card p-5 flex items-center gap-5 card-link"
-      style={{ textDecoration: 'none' }}
-    >
-      <div
-        className="w-12 h-12 rounded-xl shrink-0 flex items-center justify-center font-heading font-black text-lg"
-        style={{
-          backgroundColor: PALETTE[index % PALETTE.length],
-          border:    '2px solid var(--ink)',
-          boxShadow: '3px 3px 0px var(--ink)',
-          color:     'var(--ink)',
-        }}
-        aria-hidden="true"
-      >
-        🚴
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="font-heading font-black text-ink text-base leading-snug truncate flex items-center gap-2">
-          {scheduleLabel && (
-            <span
-              className="px-2.5 py-0.5 rounded-full text-xs font-black shrink-0"
-              style={{
-                backgroundColor: 'var(--amber)',
-                border:          '2px solid var(--ink)',
-                color:           'var(--ink)',
-              }}
-            >
-              {scheduleLabel}
-            </span>
-          )}
-          <span className="truncate">{ride.name}</span>
-        </p>
-        <p className="text-ink-soft text-sm mt-0.5">
-          {formatDate(ride.date)} · {formatTime(ride.date)} · {ride.distance_km} km · {ride.elevation_m} m ↑
-        </p>
-      </div>
-
-      {attendees.length > 0 && (
-        <div className="shrink-0 flex items-center gap-2.5">
-          <AvatarStack users={attendees} size={30} />
-          <span className="text-xs font-black text-ink-soft tabular-nums">
-            {attendees.length}
-          </span>
-        </div>
-      )}
-
-    </Link>
   );
 }
 
@@ -182,10 +106,24 @@ export default async function ClubPage({
       }).catch(() => [])
     : [];
 
-  const rides = await pb.collection('routes').getFullList<Route>({
-    filter: `club = "${club.id}" && status != "cancelled"`,
-    sort:   'date',
-  }).catch(() => []);
+  // Upcoming = anything on or after today's Brussels midnight, so a ride
+  // that started this morning stays here all day and only flips to "past"
+  // at midnight. Past rides live on a separate page; we just need a count.
+  // `requestKey: null` opts out of the PB JS SDK's auto-cancellation —
+  // without it the two parallel routes queries cancel each other.
+  const cutoff = startOfTodayIso();
+  const [rides, pastList] = await Promise.all([
+    pb.collection('routes').getFullList<Route>({
+      filter:     `club = "${club.id}" && status != "cancelled" && date >= "${cutoff}"`,
+      sort:       'date',
+      requestKey: null,
+    }).catch(() => []),
+    pb.collection('routes').getList(1, 1, {
+      filter:     `club = "${club.id}" && status != "cancelled" && date < "${cutoff}"`,
+      requestKey: null,
+    }).catch(() => null),
+  ]);
+  const pastCount = pastList?.totalItems ?? 0;
 
   const attendances = rides.length > 0
     ? await pb.collection('attendances').getFullList<Attendance>({
@@ -436,6 +374,17 @@ export default async function ClubPage({
                 attendees={attendeesByRide.get(ride.id) ?? []}
               />
             ))}
+          </div>
+        )}
+
+        {pastCount > 0 && (
+          <div className="mt-6 text-center">
+            <Link
+              href={`/clubs/${slug}/rides/past`}
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-ink-soft hover:text-accent transition-colors"
+            >
+              {tDetail('viewPastRides', { count: pastCount })}
+            </Link>
           </div>
         )}
       </section>
