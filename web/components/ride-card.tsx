@@ -24,6 +24,7 @@ function formatTime(iso: string) {
 export async function RideCard({
   ride,
   slug,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   clubName,
   index,
   scheduleLabel,
