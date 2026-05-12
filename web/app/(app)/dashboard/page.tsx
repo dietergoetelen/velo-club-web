@@ -200,19 +200,26 @@ export default async function DashboardPage() {
               return (
                 <div
                   key={club.id}
-                  className="flex items-center justify-between gap-4 px-6 py-5"
+                  className="flex items-center justify-between gap-4"
                   style={index !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
                 >
-                  <div className="min-w-0">
-                    <p className="font-heading font-bold text-ink truncate">{club.name}</p>
+                  <Link
+                    href={`/clubs/${club.slug}`}
+                    className="min-w-0 flex-1 px-6 py-5 group"
+                  >
+                    <p className="font-heading font-bold text-ink truncate group-hover:text-accent transition-colors duration-200">
+                      {club.name}
+                    </p>
                     {club.description && (
                       <p className="text-sm text-ink-soft mt-0.5 truncate">{markdownToPreview(club.description)}</p>
                     )}
+                  </Link>
+                  <div className="pr-6 shrink-0">
+                    {isPending
+                      ? <span className="badge-neutral">{t('pendingBadge')}</span>
+                      : <JoinRequestForm clubId={club.id} slug={club.slug} />
+                    }
                   </div>
-                  {isPending
-                    ? <span className="badge-neutral shrink-0">{t('pendingBadge')}</span>
-                    : <JoinRequestForm clubId={club.id} slug={club.slug} />
-                  }
                 </div>
               );
             })}
