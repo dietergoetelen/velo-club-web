@@ -434,14 +434,16 @@ export function RidePlanner({
     setIsOpenRoute(false);
     setStep('editing');
   };
-  const exitEdit  = () => {
-    if (routes.length === 0) {
-      // Manual mode (or waypoint with rejected result): nothing to fall back to.
-      setSelectedRoute(null);
-      setStep(mode ? 'setup' : 'mode');
-    } else {
+  const exitEdit = () => {
+    if (routes.length > 0) {
+      // Loop mode: back to the 3 generated routes.
       setStep('picking');
+      return;
     }
+    // Manual mode: back to the planning-method picker, clean slate.
+    setSelectedRoute(null);
+    setMode(null);
+    setStep('mode');
   };
 
   const canGenerate = !!startPos && !isPending;
@@ -466,7 +468,7 @@ export function RidePlanner({
               onClick={exitEdit}
               className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
             >
-              {t('backToRoutes')}
+              ← {routes.length > 0 ? t('backToRoutes') : t('backToModes')}
             </button>
             <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
               {t('editRouteTitle')}

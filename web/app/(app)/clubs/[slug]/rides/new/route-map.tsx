@@ -56,14 +56,22 @@ function BoundsFitter({
   const fitOnceForEditing = useRef(false);
 
   useEffect(() => {
-    // First time we enter edit mode, fit to the polyline we're editing.
-    // Don't re-fit on subsequent recalcs — the user may have panned.
-    if (editing && !fitOnceForEditing.current && editPolyline?.length) {
-      map.fitBounds(editPolyline as [number, number][], { padding: [48, 48] });
+    if (editing) {
+      // First time we enter edit mode, position the map. Don't re-fit on
+      // subsequent recalcs — the user may have panned.
+      if (fitOnceForEditing.current) return;
+
+      if (editPolyline && editPolyline.length >= 2) {
+        // Existing route — fit to its bounds.
+        map.fitBounds(editPolyline as [number, number][], { padding: [48, 48] });
+      } else if (startPos) {
+        // Empty/single-point polyline — center on start. fitBounds on a
+        // single point would zoom to max; use a friendly default zoom.
+        map.setView([startPos.lat, startPos.lng], 13);
+      }
       fitOnceForEditing.current = true;
       return;
     }
-    if (editing) return;  // skip the planner's logic while editing
 
     if (routes.length > 0) {
       const all = routes.flatMap(r => r.coordinates) as [number, number][];

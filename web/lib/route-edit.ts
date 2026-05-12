@@ -229,12 +229,23 @@ export function useRouteEdit({
     );
     const newWp: Waypoint = { id: newWaypointId(), lat, lng, polylineIdx };
 
-    const sorted = [...waypoints].sort((a, b) => a.polylineIdx - b.polylineIdx);
-    let insertAt = sorted.length;
-    for (let i = 0; i < sorted.length; i++) {
-      if (polylineIdx < sorted[i].polylineIdx) { insertAt = i; break; }
+    // Open routes (drawing mode): the user is laying down waypoints in visit
+    // order, so always append. Closed loops (refining a generated route):
+    // insert at the position closest to where the user clicked along the
+    // existing path — natural for "add a detour here".
+    let baseList: Waypoint[];
+    let insertAt:  number;
+    if (open) {
+      baseList = waypoints;
+      insertAt = waypoints.length;
+    } else {
+      baseList = [...waypoints].sort((a, b) => a.polylineIdx - b.polylineIdx);
+      insertAt = baseList.length;
+      for (let i = 0; i < baseList.length; i++) {
+        if (polylineIdx < baseList[i].polylineIdx) { insertAt = i; break; }
+      }
     }
-    const nextWps = [...sorted.slice(0, insertAt), newWp, ...sorted.slice(insertAt)];
+    const nextWps = [...baseList.slice(0, insertAt), newWp, ...baseList.slice(insertAt)];
     const points  = buildPoints(nextWps);
 
     // In open mode appending past the last waypoint, there's no existing
