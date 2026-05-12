@@ -24,7 +24,7 @@ const RouteMap = dynamic(() => import('./route-map'), {
 });
 
 type StartPos = { lat: number; lng: number };
-type Mode = 'loop' | 'waypoint' | 'manual';
+type Mode = 'loop' | 'manual';
 type Step = 'mode' | 'setup' | 'generating' | 'picking' | 'editing';
 
 function tomorrow() {
@@ -602,13 +602,6 @@ export function RidePlanner({
                 onClick={() => pickMode('loop')}
               />
               <ModeCard
-                emoji="📍"
-                title={t('modeWaypointTitle')}
-                description={t('modeWaypointDescription')}
-                onClick={() => pickMode('waypoint')}
-                badge={t('modeComingSoon')}
-              />
-              <ModeCard
                 emoji="✏️"
                 title={t('modeManualTitle')}
                 description={t('modeManualDescription')}
@@ -776,12 +769,6 @@ export function RidePlanner({
           )}
           {step !== 'picking' && mode === 'manual' && !startPos && (
             <p className="text-xs text-ink-soft">{t('manualWaitingForStart')}</p>
-          )}
-          {step !== 'picking' && mode === 'waypoint' && (
-            <div className="card p-4 text-center">
-              <p className="text-sm font-bold text-ink">{t('waypointStub')}</p>
-              <p className="text-xs text-ink-soft mt-1">{t('waypointStubHint')}</p>
-            </div>
           )}
 
           {/* ── Route cards ── */}
