@@ -202,26 +202,26 @@ export default async function ClubPage({
           }}
         />
 
-        <div className="flex items-start justify-between gap-4 max-w-xl">
-          <div>
-            <h1 className="font-heading font-black text-4xl md:text-5xl text-ink tracking-tight leading-[1.1]">
-              {club.name}
-            </h1>
-            {club.description && club.description.trim() && (
-              <ClubIntro markdown={club.description} />
-            )}
-            <div className="mt-5 flex gap-2 flex-wrap">
-              {isCaptain && <span className="badge-brand">{tDetail('captainBadge')}</span>}
-              {isMember && !isCaptain && <span className="badge-neutral">{tDetail('memberBadge')}</span>}
-            </div>
-          </div>
+        <div className="flex items-center justify-between gap-4 max-w-xl">
+          <h1 className="font-heading font-black text-4xl md:text-5xl text-ink tracking-tight leading-[1.1]">
+            {club.name}
+          </h1>
 
           {isCaptain && (
             <Link href={`/clubs/${slug}/settings`} className="btn-secondary text-sm shrink-0">
               {tDetail('settingsLink')}
             </Link>
           )}
+          {isMember && !isCaptain && (
+            <span className="badge-neutral shrink-0">{tDetail('memberBadge')}</span>
+          )}
         </div>
+
+        {club.description && club.description.trim() && (
+          <div className="mt-6 max-w-2xl">
+            <ClubIntro markdown={club.description} />
+          </div>
+        )}
       </div>
 
       {/* ── Non-member: join request ───────────────────────────────────── */}
