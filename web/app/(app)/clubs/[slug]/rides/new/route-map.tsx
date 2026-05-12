@@ -14,6 +14,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { RideRoute } from '@/lib/types';
 import DirectionArrows from '@/lib/direction-arrows';
+import { MapSearch } from '@/components/map-search';
 
 type StartPos = { lat: number; lng: number };
 type Waypoint = { id: string; lat: number; lng: number };
@@ -155,6 +156,7 @@ export default function RouteMap({
         onMapClick={onMapClick}
         onAddWaypoint={onAddWaypoint}
       />
+      <MapSearch />
       <BoundsFitter
         routes={routes}
         startPos={startPos}

@@ -856,7 +856,7 @@ export function RidePlanner({
         {/* Pill instruction — only when no start has been set */}
         {!startPos && (
           <div
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]
+            className="absolute top-20 left-1/2 -translate-x-1/2 z-[1000]
                        px-5 py-2.5 rounded-full font-bold text-sm text-white
                        pointer-events-none select-none"
             style={{

@@ -23,6 +23,12 @@
     "signOut": "Afmelden",
     "editProfile": "Bewerk je profiel"
   },
+  "mapSearch": {
+    "placeholder": "Zoek een adres of plaats…",
+    "searching": "Zoeken…",
+    "noResults": "Geen resultaten gevonden",
+    "clear": "Wis zoekopdracht"
+  },
   "auth": {
     "layout": {
       "headline": "Jouw fietsclub,\ngeorganiseerd.",
