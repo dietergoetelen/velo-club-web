@@ -24,7 +24,8 @@ const RouteMap = dynamic(() => import('./route-map'), {
 });
 
 type StartPos = { lat: number; lng: number };
-type Step = 'setup' | 'generating' | 'picking' | 'editing';
+type Mode = 'loop' | 'waypoint' | 'manual';
+type Step = 'mode' | 'setup' | 'generating' | 'picking' | 'editing';
 
 function tomorrow() {
   const d = new Date();
@@ -120,6 +121,129 @@ function RouteCard({
   );
 }
 
+// ── Date / time / schedule fields (shared between setup and editing save) ─────
+
+function DateTimeFields({
+  schedules, scheduleId, pickSchedule,
+  date, time,
+  onDateChange, onTimeChange,
+  disabled,
+}: {
+  schedules:    ClubSchedule[];
+  scheduleId:   string;
+  pickSchedule: (id: string, occurrenceDate: Date) => void;
+  date:         string;
+  time:         string;
+  onDateChange: (next: string) => void;
+  onTimeChange: (next: string) => void;
+  disabled:     boolean;
+}) {
+  const t = useTranslations('rides.create');
+  const occurrences = useMemo(() => upcomingOccurrences(schedules, 7), [schedules]);
+
+  return (
+    <>
+      {occurrences.length > 0 && (
+        <div>
+          <p className="field-label">{t('useSchedule')}</p>
+          <div className="flex flex-wrap gap-2">
+            {occurrences.map(({ schedule, date: d }) => {
+              const isSelected = scheduleId === schedule.id;
+              return (
+                <button
+                  key={schedule.id}
+                  type="button"
+                  onClick={() => pickSchedule(schedule.id, d)}
+                  disabled={disabled}
+                  className="text-xs font-bold px-3 py-1.5 rounded-full transition-all"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--amber)' : 'white',
+                    border:          '2px solid var(--ink)',
+                    boxShadow:       isSelected ? '2px 2px 0px var(--ink)' : '2px 2px 0px var(--line)',
+                    transform:       isSelected ? 'translate(-1px,-1px)' : 'none',
+                    color:           'var(--ink)',
+                  }}
+                >
+                  {DAY_NAMES_SHORT[schedule.day_of_week]} · {schedule.time} · {schedule.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="field-label">{t('dateLabel')}</label>
+          <input
+            type="date"
+            value={date}
+            min={new Date().toISOString().split('T')[0]}
+            onChange={e => onDateChange(e.target.value)}
+            disabled={disabled}
+            className="field-input"
+          />
+        </div>
+        <div>
+          <label className="field-label">{t('timeLabel')}</label>
+          <input
+            type="time"
+            value={time}
+            onChange={e => onTimeChange(e.target.value)}
+            disabled={disabled}
+            className="field-input"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Mode picker card ──────────────────────────────────────────────────────────
+
+function ModeCard({
+  emoji,
+  title,
+  description,
+  onClick,
+  badge,
+}: {
+  emoji:        string;
+  title:        string;
+  description:  string;
+  onClick:      () => void;
+  badge?:       string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left rounded-xl p-4 flex items-start gap-4 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5"
+      style={{
+        backgroundColor: 'white',
+        border:          '2px solid var(--ink)',
+        boxShadow:       '4px 4px 0px var(--ink)',
+      }}
+    >
+      <span className="text-2xl leading-none mt-0.5" aria-hidden>{emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-heading font-black text-ink text-base leading-tight">{title}</p>
+          {badge && (
+            <span
+              className="text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0"
+              style={{ backgroundColor: 'var(--muted)', color: 'var(--ink-soft)' }}
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-ink-soft mt-1">{description}</p>
+      </div>
+    </button>
+  );
+}
+
 // ── Main planner ──────────────────────────────────────────────────────────────
 
 export function RidePlanner({
@@ -175,8 +299,6 @@ export function RidePlanner({
   const [distance, setDistance] = useState(30);
   const [scheduleId, setScheduleId] = useState<string>('');
 
-  const occurrences = useMemo(() => upcomingOccurrences(schedules, 7), [schedules]);
-
   const scheduleLabel = schedules.find(s => s.id === scheduleId)?.label.trim();
 
   const pickSchedule = (id: string, occurrenceDate: Date) => {
@@ -194,12 +316,68 @@ export function RidePlanner({
     setTime(`${hh}:${min}`);
   };
 
+  const onDateChange = (next: string) => {
+    setDate(next);
+    setScheduleId(findMatchingSchedule(schedules, next, time)?.id ?? '');
+  };
+  const onTimeChange = (next: string) => {
+    setTime(next);
+    setScheduleId(findMatchingSchedule(schedules, date, next)?.id ?? '');
+  };
+
   const [routes, setRoutes]               = useState<RideRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<RideRoute | null>(null);
-  const [step, setStep]                   = useState<Step>('setup');
+  const [mode, setMode]                   = useState<Mode | null>(null);
+  const [step, setStep]                   = useState<Step>('mode');
   const [genError, setGenError]           = useState<string | null>(null);
   const [profile, setProfile]             = useState<string>('racingbike');
   const [isOpenRoute, setIsOpenRoute]     = useState(false);
+
+  const startManualEditing = (pos: StartPos) => {
+    setRoutes([]);
+    setSelectedRoute({
+      id:          'a',
+      label:       t('customLabel'),
+      color:       '#FBBF24',
+      distance:    0,
+      elevation:   0,
+      coordinates: [[pos.lat, pos.lng]],
+      score:       100,
+      lollipopM:   0,
+    });
+    setIsOpenRoute(true);
+    setGenError(null);
+    setStep('editing');
+  };
+
+  const pickMode = (m: Mode) => {
+    setMode(m);
+    setRoutes([]);
+    setSelectedRoute(null);
+    setGenError(null);
+    if (m === 'manual' && startPos) {
+      startManualEditing(startPos);
+    } else {
+      setStep('setup');
+    }
+  };
+
+  // Manual mode: as soon as a start position lands (map click, geolocation,
+  // or "use club start"), jump straight into editing — no intermediate setup screen.
+  const acceptStart = (pos: StartPos | null) => {
+    setStartPos(pos);
+    if (pos && mode === 'manual' && step === 'setup') {
+      startManualEditing(pos);
+    }
+  };
+
+  const backToModePicker = () => {
+    setMode(null);
+    setRoutes([]);
+    setSelectedRoute(null);
+    setGenError(null);
+    setStep('mode');
+  };
 
   const [isPending, startTransition] = useTransition();
   const [saveError, saveAction]      = useActionState(saveRide, null);
@@ -207,7 +385,7 @@ export function RidePlanner({
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      pos => setStartPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      pos => acceptStart({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       ()  => alert(t('geolocationFailed')),
     );
   };
@@ -227,27 +405,6 @@ export function RidePlanner({
         setStep('setup');
       }
     });
-  };
-
-  const handleCreate = () => {
-    if (!startPos) return;
-    // Open mode: route ends at the last waypoint, doesn't snap back to start.
-    // Seed is just the start position; useRouteEdit returns empty segments
-    // until the user adds their first waypoint.
-    setRoutes([]);
-    setSelectedRoute({
-      id:          'a',
-      label:       t('customLabel'),
-      color:       '#FBBF24',
-      distance:    0,
-      elevation:   0,
-      coordinates: [[startPos.lat, startPos.lng]],
-      score:       100,
-      lollipopM:   0,
-    });
-    setIsOpenRoute(true);
-    setGenError(null);
-    setStep('editing');
   };
 
   const handleRegenerate = () => {
@@ -279,8 +436,9 @@ export function RidePlanner({
   };
   const exitEdit  = () => {
     if (routes.length === 0) {
+      // Manual mode (or waypoint with rejected result): nothing to fall back to.
       setSelectedRoute(null);
-      setStep('setup');
+      setStep(mode ? 'setup' : 'mode');
     } else {
       setStep('picking');
     }
@@ -325,6 +483,17 @@ export function RidePlanner({
             <input type="hidden" name="date"        value={date} />
             <input type="hidden" name="time"        value={time} />
             <input type="hidden" name="scheduleId"  value={scheduleId} />
+
+            <DateTimeFields
+              schedules={schedules}
+              scheduleId={scheduleId}
+              pickSchedule={pickSchedule}
+              date={date}
+              time={time}
+              onDateChange={onDateChange}
+              onTimeChange={onTimeChange}
+              disabled={false}
+            />
 
             {saveError && <p className="field-error">{saveError}</p>}
 
@@ -390,17 +559,29 @@ export function RidePlanner({
           className="px-5 pt-1 pb-4 md:px-7 md:pt-7 md:pb-5 shrink-0"
           style={{ borderBottom: '2px solid var(--line)' }}
         >
-          <Link
-            href={`/clubs/${slug}`}
-            className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
-          >
-            ← {clubName}
-          </Link>
+          {step === 'mode' ? (
+            <Link
+              href={`/clubs/${slug}`}
+              className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+            >
+              ← {clubName}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={backToModePicker}
+              className="eyebrow mb-3 inline-flex items-center gap-1.5 hover:text-accent transition-colors"
+            >
+              ← {t('backToModes')}
+            </button>
+          )}
           <h1 className="font-heading font-black text-2xl text-ink tracking-tight leading-tight">
-            {t('title')}
+            {step === 'mode' ? t('modeTitle') : t('title')}
           </h1>
           <p className="text-ink-soft text-xs mt-1.5">
-            {!startPos
+            {step === 'mode'
+              ? t('modeSubtitle')
+              : !startPos
               ? t('subtitleNoStart')
               : step === 'picking'
               ? t('subtitlePicking')
@@ -411,7 +592,34 @@ export function RidePlanner({
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 md:px-7 py-5 md:py-6 space-y-5">
 
+          {/* ── Mode picker ── */}
+          {step === 'mode' && (
+            <div className="space-y-3">
+              <ModeCard
+                emoji="🔁"
+                title={t('modeLoopTitle')}
+                description={t('modeLoopDescription')}
+                onClick={() => pickMode('loop')}
+              />
+              <ModeCard
+                emoji="📍"
+                title={t('modeWaypointTitle')}
+                description={t('modeWaypointDescription')}
+                onClick={() => pickMode('waypoint')}
+                badge={t('modeComingSoon')}
+              />
+              <ModeCard
+                emoji="✏️"
+                title={t('modeManualTitle')}
+                description={t('modeManualDescription')}
+                onClick={() => pickMode('manual')}
+              />
+            </div>
+          )}
+
           {/* ── Start position ── */}
+          {step !== 'mode' && (<>
+
           <div>
             <p className="field-label">{t('startLabel')}</p>
             {!startPos ? (
@@ -425,7 +633,7 @@ export function RidePlanner({
                 {clubStart ? (
                   <button
                     type="button"
-                    onClick={() => setStartPos(clubStart)}
+                    onClick={() => acceptStart(clubStart)}
                     className="btn-secondary text-xs px-3 shrink-0"
                     title={t('useClubStartTitle')}
                   >
@@ -464,97 +672,51 @@ export function RidePlanner({
             )}
           </div>
 
-          {/* ── Schedule picker ── */}
-          {occurrences.length > 0 && (
+          {/* ── Date / time / schedule (loop + waypoint; manual mode fills these in editing) ── */}
+          {mode !== 'manual' && (
+            <DateTimeFields
+              schedules={schedules}
+              scheduleId={scheduleId}
+              pickSchedule={pickSchedule}
+              date={date}
+              time={time}
+              onDateChange={onDateChange}
+              onTimeChange={onTimeChange}
+              disabled={isPending}
+            />
+          )}
+
+          {/* ── Distance slider (loop mode only) ── */}
+          {mode === 'loop' && (
             <div>
-              <p className="field-label">{t('useSchedule')}</p>
-              <div className="flex flex-wrap gap-2">
-                {occurrences.map(({ schedule, date: d }) => {
-                  const isSelected = scheduleId === schedule.id;
-                  return (
-                    <button
-                      key={schedule.id}
-                      type="button"
-                      onClick={() => pickSchedule(schedule.id, d)}
-                      disabled={isPending}
-                      className="text-xs font-bold px-3 py-1.5 rounded-full transition-all"
-                      style={{
-                        backgroundColor: isSelected ? 'var(--amber)' : 'white',
-                        border:          '2px solid var(--ink)',
-                        boxShadow:       isSelected ? '2px 2px 0px var(--ink)' : '2px 2px 0px var(--line)',
-                        transform:       isSelected ? 'translate(-1px,-1px)' : 'none',
-                        color:           'var(--ink)',
-                      }}
-                    >
-                      {DAY_NAMES_SHORT[schedule.day_of_week]} · {schedule.time} · {schedule.label}
-                    </button>
-                  );
-                })}
+              <label className="field-label">
+                {t('distanceLabel')} —{' '}
+                <span
+                  className="font-black normal-case tracking-normal"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  {distance} km
+                </span>
+              </label>
+              <input
+                type="range"
+                min={10}
+                max={120}
+                step={5}
+                value={distance}
+                onChange={e => setDistance(Number(e.target.value))}
+                disabled={isPending}
+                className="w-full mt-1"
+                style={{ accentColor: 'var(--accent)', opacity: isPending ? 0.5 : 1 }}
+              />
+              <div className="flex justify-between text-xs text-ink-soft mt-0.5 font-medium">
+                <span>10 km</span><span>120 km</span>
               </div>
             </div>
           )}
 
-          {/* ── Date + time ── */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="field-label">{t('dateLabel')}</label>
-              <input
-                type="date"
-                value={date}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={e => {
-                  const next = e.target.value;
-                  setDate(next);
-                  setScheduleId(findMatchingSchedule(schedules, next, time)?.id ?? '');
-                }}
-                disabled={isPending}
-                className="field-input"
-              />
-            </div>
-            <div>
-              <label className="field-label">{t('timeLabel')}</label>
-              <input
-                type="time"
-                value={time}
-                onChange={e => {
-                  const next = e.target.value;
-                  setTime(next);
-                  setScheduleId(findMatchingSchedule(schedules, date, next)?.id ?? '');
-                }}
-                disabled={isPending}
-                className="field-input"
-              />
-            </div>
-          </div>
-
-          {/* ── Distance slider ── */}
-          <div>
-            <label className="field-label">
-              {t('distanceLabel')} —{' '}
-              <span
-                className="font-black normal-case tracking-normal"
-                style={{ color: 'var(--accent)' }}
-              >
-                {distance} km
-              </span>
-            </label>
-            <input
-              type="range"
-              min={10}
-              max={120}
-              step={5}
-              value={distance}
-              onChange={e => setDistance(Number(e.target.value))}
-              disabled={isPending}
-              className="w-full mt-1"
-              style={{ accentColor: 'var(--accent)', opacity: isPending ? 0.5 : 1 }}
-            />
-            <div className="flex justify-between text-xs text-ink-soft mt-0.5 font-medium">
-              <span>10 km</span><span>120 km</span>
-            </div>
-          </div>
-
           {/* ── Bike type ── */}
+          {mode !== 'manual' && (
           <div>
             <label className="field-label">{t('bikeTypeLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
@@ -586,39 +748,39 @@ export function RidePlanner({
               })}
             </div>
           </div>
+          )}
 
           {/* ── Generate error ── */}
           {genError && <p className="field-error">{genError}</p>}
 
-          {/* ── Generate / Create buttons ── */}
-          {step !== 'picking' && (
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={!canGenerate}
-                className="btn-primary"
-              >
-                {isPending ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span
-                      className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
-                      style={{ borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'white' }}
-                    />
-                    {t('crunching')}
-                  </span>
-                ) : (
-                  t('generate')
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={!startPos || isPending}
-                className="btn-secondary"
-              >
-                {t('create')}
-              </button>
+          {/* ── Mode-specific CTA ── */}
+          {step !== 'picking' && mode === 'loop' && (
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className="btn-primary w-full"
+            >
+              {isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span
+                    className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'white' }}
+                  />
+                  {t('crunching')}
+                </span>
+              ) : (
+                t('generate')
+              )}
+            </button>
+          )}
+          {step !== 'picking' && mode === 'manual' && !startPos && (
+            <p className="text-xs text-ink-soft">{t('manualWaitingForStart')}</p>
+          )}
+          {step !== 'picking' && mode === 'waypoint' && (
+            <div className="card p-4 text-center">
+              <p className="text-sm font-bold text-ink">{t('waypointStub')}</p>
+              <p className="text-xs text-ink-soft mt-1">{t('waypointStubHint')}</p>
             </div>
           )}
 
@@ -686,6 +848,7 @@ export function RidePlanner({
             </form>
           )}
 
+          </>)}
         </div>
       </aside>
 
@@ -697,7 +860,7 @@ export function RidePlanner({
           startPos={startPos}
           routes={routes}
           selectedRouteId={selectedRoute?.id ?? null}
-          onMapClick={setStartPos}
+          onMapClick={acceptStart}
           onRouteSelect={setSelectedRoute}
         />
 
