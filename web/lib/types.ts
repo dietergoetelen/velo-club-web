@@ -65,6 +65,19 @@ export interface Attendance extends PBRecord {
   user:  string; // relation → PB user id
 }
 
+// UI currently exposes just ❤️. The `emoji` column on ride_reactions is a
+// free-text field, so re-introducing more reactions is just a matter of
+// extending this union + array.
+export type ReactionEmoji = '❤️';
+
+export const REACTION_EMOJIS: readonly ReactionEmoji[] = ['❤️'];
+
+export interface RideReaction extends PBRecord {
+  route: string;         // relation → Route.id
+  user:  string;         // relation → PB user id
+  emoji: ReactionEmoji;
+}
+
 // ── Route planner ─────────────────────────────────────────────────────────────
 
 export interface RideRoute {

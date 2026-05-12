@@ -5,12 +5,13 @@ import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { fileUrl } from '@/lib/pocketbase';
 import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/actions/clubs';
 import { JoinRequestForm } from './join-request-form';
-import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
+import { type StackedUser } from '@/components/avatar-stack';
 import { ClubIntro } from '@/components/club-intro';
 import { RideCard } from '@/components/ride-card';
 import { startOfTodayIso } from '@/lib/dates';
-import { DAY_NAMES, compareSchedules } from '@/lib/schedules';
-import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, Route } from '@/lib/types';
+import { compareSchedules } from '@/lib/schedules';
+import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, ReactionEmoji, RideReaction, Route } from '@/lib/types';
+import { REACTION_EMOJIS } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
 function clubAccent(id: string) { return PALETTE[id.charCodeAt(0) % 4]; }
@@ -23,43 +24,6 @@ function getInitials(nameOrEmail: string) {
     .slice(0, 2)
     .map(s => s[0]?.toUpperCase() ?? '')
     .join('');
-}
-
-interface DayGroup {
-  isoDate: string;  // "YYYY-MM-DD"
-  date:    Date;
-  rides:   Route[];
-}
-
-function buildDayGroups(schedules: ClubSchedule[], rides: Route[]): DayGroup[] {
-  const scheduleById = new Map(schedules.map(s => [s.id, s]));
-  const byDate       = new Map<string, Route[]>();
-
-  for (const ride of rides) {
-    const iso = ride.date.slice(0, 10);
-    if (!byDate.has(iso)) byDate.set(iso, []);
-    byDate.get(iso)!.push(ride);
-  }
-
-  return [...byDate.entries()]
-    .map(([iso, rs]) => {
-      rs.sort((a, b) => {
-        const la = scheduleById.get(a.schedule)?.label.trim().toLowerCase() ?? '~';
-        const lb = scheduleById.get(b.schedule)?.label.trim().toLowerCase() ?? '~';
-        if (la !== lb) return la < lb ? -1 : 1;
-        return a.date.localeCompare(b.date);
-      });
-      return { isoDate: iso, date: new Date(`${iso}T00:00:00`), rides: rs };
-    })
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-function DayGroupHeader({ date }: { date: Date }) {
-  return (
-    <p className="font-heading font-black text-sm text-ink uppercase tracking-wide">
-      {DAY_NAMES[date.getDay()]} · {date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })}
-    </p>
-  );
 }
 
 export default async function ClubPage({
@@ -125,13 +89,24 @@ export default async function ClubPage({
   ]);
   const pastCount = pastList?.totalItems ?? 0;
 
-  const attendances = rides.length > 0
-    ? await pb.collection('attendances').getFullList<Attendance>({
-        filter: rides.map(r => `route = "${r.id}"`).join(' || '),
-      }).catch(() => [])
-    : [];
+  const rideIdFilter = rides.length > 0
+    ? rides.map(r => `route = "${r.id}"`).join(' || ')
+    : '';
 
-  // Fetch user details for members + pending requests + attendees (viewRule allows this after migration 003)
+  const [attendances, reactions] = rides.length > 0
+    ? await Promise.all([
+        pb.collection('attendances').getFullList<Attendance>({
+          filter:     rideIdFilter,
+          requestKey: null,
+        }).catch(() => []),
+        pb.collection('ride_reactions').getFullList<RideReaction>({
+          filter:     rideIdFilter,
+          requestKey: null,
+        }).catch(() => []),
+      ])
+    : [[], []] as [Attendance[], RideReaction[]];
+
+  // Fetch user details for members + pending requests + attendees
   const userIds = [...new Set([
     ...members.map(m => m.user),
     ...pendingRequests.map(r => r.user),
@@ -165,6 +140,20 @@ export default async function ClubPage({
     });
     attendeesByRide.set(a.route, list);
   }
+
+  function emptyReactionCounts(): Record<ReactionEmoji, number> {
+    return REACTION_EMOJIS.reduce((acc, e) => { acc[e] = 0; return acc; }, {} as Record<ReactionEmoji, number>);
+  }
+  const reactionCountsByRide = new Map<string, Record<ReactionEmoji, number>>();
+  const myReactionByRide     = new Map<string, ReactionEmoji>();
+  for (const r of reactions) {
+    if (!(REACTION_EMOJIS as readonly string[]).includes(r.emoji)) continue;
+    const counts = reactionCountsByRide.get(r.route) ?? emptyReactionCounts();
+    counts[r.emoji] += 1;
+    reactionCountsByRide.set(r.route, counts);
+    if (r.user === user.id) myReactionByRide.set(r.route, r.emoji);
+  }
+
 
   const schedules = club.schedules_enabled
     ? (await pb.collection('club_schedules').getFullList<ClubSchedule>({
@@ -342,26 +331,6 @@ export default async function ClubPage({
               </p>
             )}
           </div>
-        ) : club.schedules_enabled ? (
-          <div className="space-y-6">
-            {buildDayGroups(schedules, rides).map(group => (
-              <div key={group.isoDate}>
-                <DayGroupHeader date={group.date} />
-                <div className="space-y-3 mt-3">
-                  {group.rides.map((ride, i) => (
-                    <RideCard
-                      key={ride.id}
-                      ride={ride}
-                      slug={slug}
-                      index={i}
-                      scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
-                      attendees={attendeesByRide.get(ride.id) ?? []}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
           <div className="space-y-3">
             {rides.map((ride, i) => (
@@ -372,6 +341,9 @@ export default async function ClubPage({
                 index={i}
                 scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
                 attendees={attendeesByRide.get(ride.id) ?? []}
+                reactionCounts={reactionCountsByRide.get(ride.id) ?? emptyReactionCounts()}
+                currentUserReaction={myReactionByRide.get(ride.id) ?? null}
+                canReact={isMember}
               />
             ))}
           </div>

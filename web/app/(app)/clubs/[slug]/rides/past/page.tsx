@@ -5,7 +5,8 @@ import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { RideCard } from '@/components/ride-card';
 import { type StackedUser } from '@/components/avatar-stack';
 import { startOfTodayIso } from '@/lib/dates';
-import type { Attendance, Club, ClubSchedule, Route } from '@/lib/types';
+import type { Attendance, Club, ClubMember, ClubSchedule, ReactionEmoji, RideReaction, Route } from '@/lib/types';
+import { REACTION_EMOJIS } from '@/lib/types';
 
 export default async function PastRidesPage({
   params,
@@ -37,7 +38,11 @@ export default async function PastRidesPage({
     sort:   '-date',
   }).catch(() => []);
 
-  const [schedules, attendances] = await Promise.all([
+  const rideIdFilter = rides.length > 0
+    ? rides.map(r => `route = "${r.id}"`).join(' || ')
+    : '';
+
+  const [schedules, attendances, reactions, myMembership] = await Promise.all([
     club.schedules_enabled
       ? pb.collection('club_schedules').getFullList<ClubSchedule>({
           filter: `club = "${club.id}"`,
@@ -45,18 +50,29 @@ export default async function PastRidesPage({
       : Promise.resolve([] as ClubSchedule[]),
     rides.length > 0
       ? pb.collection('attendances').getFullList<Attendance>({
-          filter: rides.map(r => `route = "${r.id}"`).join(' || '),
+          filter:     rideIdFilter,
+          requestKey: null,
         }).catch(() => [])
       : Promise.resolve([] as Attendance[]),
+    rides.length > 0
+      ? pb.collection('ride_reactions').getFullList<RideReaction>({
+          filter:     rideIdFilter,
+          requestKey: null,
+        }).catch(() => [])
+      : Promise.resolve([] as RideReaction[]),
+    pb.collection('club_members')
+      .getFirstListItem<ClubMember>(`club = "${club.id}" && user = "${user.id}"`)
+      .catch(() => null),
   ]);
 
+  const isMember     = !!myMembership;
   const scheduleById = new Map(schedules.map(s => [s.id, s]));
 
-  // Resolve attendee user info — needed for the avatar stacks on each card.
-  const attendeeIds = [...new Set(attendances.map(a => a.user))];
+  // Resolve user info for attendees.
+  const userIds = [...new Set(attendances.map(a => a.user))];
   const usersById: Record<string, { name: string; username: string; email: string; avatar: string }> = {};
   await Promise.all(
-    attendeeIds.map(id =>
+    userIds.map(id =>
       pb.collection('users').getOne(id)
         .then(u => {
           usersById[id] = {
@@ -82,6 +98,20 @@ export default async function PastRidesPage({
     });
     attendeesByRide.set(a.route, list);
   }
+
+  function emptyReactionCounts(): Record<ReactionEmoji, number> {
+    return REACTION_EMOJIS.reduce((acc, e) => { acc[e] = 0; return acc; }, {} as Record<ReactionEmoji, number>);
+  }
+  const reactionCountsByRide = new Map<string, Record<ReactionEmoji, number>>();
+  const myReactionByRide     = new Map<string, ReactionEmoji>();
+  for (const r of reactions) {
+    if (!(REACTION_EMOJIS as readonly string[]).includes(r.emoji)) continue;
+    const counts = reactionCountsByRide.get(r.route) ?? emptyReactionCounts();
+    counts[r.emoji] += 1;
+    reactionCountsByRide.set(r.route, counts);
+    if (r.user === user.id) myReactionByRide.set(r.route, r.emoji);
+  }
+
 
   return (
     <div className="space-y-6">
@@ -112,6 +142,9 @@ export default async function PastRidesPage({
               index={i}
               scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
               attendees={attendeesByRide.get(ride.id) ?? []}
+              reactionCounts={reactionCountsByRide.get(ride.id) ?? emptyReactionCounts()}
+              currentUserReaction={myReactionByRide.get(ride.id) ?? null}
+              canReact={isMember}
             />
           ))}
         </div>

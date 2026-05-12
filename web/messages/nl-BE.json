@@ -176,6 +176,24 @@
       "empty": "Nog geen ritten gepland.",
       "plan": "+ Plan een rit"
     },
+    "card": {
+      "proposed": "Voorgesteld {when}",
+      "unknownCreator": "Onbekend lid",
+      "distance": "Afstand",
+      "elevation": "Hoogte",
+      "when": "Wanneer",
+      "surface": "Ondergrond",
+      "surface_all": "Alle",
+      "surface_road": "Race",
+      "surface_gravel": "Gravel",
+      "km": "km",
+      "m": "m ↑",
+      "going": "{count} mee",
+      "noOneYet": "Nog niemand mee"
+    },
+    "reactions": {
+      "toggleAria": "Reageer met {emoji}"
+    },
     "detail": {
       "dateTimeLabel": "Datum & tijd",
       "startingAt": "Vertrek om {time}",
