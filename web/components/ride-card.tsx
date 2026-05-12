@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import { RoutePreview } from '@/components/route-preview';
 import { ReactionRow } from '@/components/reaction-row';
+import { ShareButton } from '@/components/share-button';
 import type { ReactionEmoji, Route } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
@@ -20,6 +21,7 @@ function formatTime(iso: string) {
 export async function RideCard({
   ride,
   slug,
+  clubName,
   index,
   scheduleLabel,
   attendees,
@@ -29,6 +31,7 @@ export async function RideCard({
 }: {
   ride:                Route;
   slug:                string;
+  clubName:            string;
   index:               number;
   scheduleLabel?:      string;
   attendees:           StackedUser[];
@@ -97,13 +100,21 @@ export async function RideCard({
             <span className="text-xs text-ink-soft">{t('noOneYet')}</span>
           )}
         </div>
-        <ReactionRow
-          rideId={ride.id}
-          slug={slug}
-          counts={reactionCounts}
-          currentUserReaction={currentUserReaction}
-          disabled={!canReact}
-        />
+        <div className="flex items-center gap-2 shrink-0">
+          <ShareButton
+            slug={slug}
+            rideId={ride.id}
+            rideName={ride.name}
+            clubName={clubName}
+          />
+          <ReactionRow
+            rideId={ride.id}
+            slug={slug}
+            counts={reactionCounts}
+            currentUserReaction={currentUserReaction}
+            disabled={!canReact}
+          />
+        </div>
       </div>
     </article>
   );

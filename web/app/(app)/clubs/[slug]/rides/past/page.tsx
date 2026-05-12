@@ -139,6 +139,7 @@ export default async function PastRidesPage({
               key={ride.id}
               ride={ride}
               slug={slug}
+              clubName={club.name}
               index={i}
               scheduleLabel={scheduleById.get(ride.schedule)?.label.trim()}
               attendees={attendeesByRide.get(ride.id) ?? []}
