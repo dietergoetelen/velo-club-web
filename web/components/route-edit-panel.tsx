@@ -22,6 +22,25 @@ const RouteMap = dynamic(
   },
 );
 
+/** Find the waypoint row whose vertical center is closest to clientY.
+ *  Returns its zero-based index, or null when the list is empty. */
+function findRowAt(list: HTMLDivElement | null, clientY: number): number | null {
+  if (!list) return null;
+  const rows = list.querySelectorAll<HTMLElement>('[data-wp-idx]');
+  let bestIdx: number | null = null;
+  let bestDist = Infinity;
+  for (const row of rows) {
+    const rect = row.getBoundingClientRect();
+    const mid  = (rect.top + rect.bottom) / 2;
+    const d    = Math.abs(clientY - mid);
+    if (d < bestDist) {
+      bestDist = d;
+      bestIdx  = Number(row.dataset.wpIdx);
+    }
+  }
+  return bestIdx;
+}
+
 export interface RouteEditState {
   distance:  number;
   elevation: number;
@@ -72,6 +91,7 @@ export function RouteEditPanel({
 
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   // Mobile bottom-sheet open/peek state — desktop ignores it.
   const [sheetOpen, setSheetOpen] = useState<boolean>(true);
 
@@ -173,35 +193,54 @@ export function RouteEditPanel({
           {edit.error && <p className="field-error">{edit.error}</p>}
 
           {edit.waypoints.length > 0 && (
-            <div className="space-y-1">
+            <div ref={listRef} className="space-y-1">
               {edit.waypoints.map((wp, i) => {
                 const isDragging = dragFrom === i;
                 const isDropTgt  = dragOver === i && dragFrom !== null && dragFrom !== i;
                 return (
                   <div
                     key={wp.id}
-                    draggable
-                    onDragStart={e => {
-                      setDragFrom(i);
-                      e.dataTransfer.effectAllowed = 'move';
-                    }}
-                    onDragEnter={() => setDragOver(i)}
-                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                    onDrop={e => {
-                      e.preventDefault();
-                      if (dragFrom !== null && dragFrom !== i) edit.reorderWaypoints(dragFrom, i);
-                      setDragFrom(null);
-                      setDragOver(null);
-                    }}
-                    onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+                    data-wp-idx={i}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
                     style={{
-                      border:    `2px solid ${isDropTgt ? 'var(--accent)' : 'var(--line)'}`,
-                      opacity:   isDragging ? 0.4 : 1,
-                      cursor:    'grab',
+                      border:  `2px solid ${isDropTgt ? 'var(--accent)' : 'var(--line)'}`,
+                      opacity: isDragging ? 0.4 : 1,
                     }}
                   >
-                    <span className="text-ink-soft select-none" aria-hidden="true">⋮⋮</span>
+                    {/* Drag handle — pointer events work on both mouse and
+                        touch. HTML5 drag/drop doesn't fire on mobile, which
+                        is why this isn't `draggable` like a desktop list. */}
+                    <span
+                      className="text-ink-soft select-none px-1 -ml-1"
+                      style={{ touchAction: 'none', cursor: dragFrom === i ? 'grabbing' : 'grab' }}
+                      onPointerDown={e => {
+                        if (e.pointerType === 'mouse' && e.button !== 0) return;
+                        e.preventDefault();
+                        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+                        setDragFrom(i);
+                        setDragOver(i);
+                      }}
+                      onPointerMove={e => {
+                        if (dragFrom === null) return;
+                        const overIdx = findRowAt(listRef.current, e.clientY);
+                        if (overIdx !== null) setDragOver(overIdx);
+                      }}
+                      onPointerUp={e => {
+                        (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+                        if (dragFrom !== null && dragOver !== null && dragFrom !== dragOver) {
+                          edit.reorderWaypoints(dragFrom, dragOver);
+                        }
+                        setDragFrom(null);
+                        setDragOver(null);
+                      }}
+                      onPointerCancel={() => {
+                        setDragFrom(null);
+                        setDragOver(null);
+                      }}
+                      aria-hidden="true"
+                    >
+                      ⋮⋮
+                    </span>
                     <span
                       className="w-5 h-5 rounded-full font-black text-[11px] flex items-center justify-center shrink-0"
                       style={{
