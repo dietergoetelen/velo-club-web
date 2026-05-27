@@ -28,8 +28,13 @@ const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
  */
 export function PushNotificationsToggle({
   hideWhenSubscribed = false,
+  heading,
 }: {
   hideWhenSubscribed?: boolean;
+  /** Optional eyebrow rendered above the card. Bundled into the same
+   *  conditional render so it vanishes alongside the toggle when the
+   *  browser doesn't support push (instead of leaving an orphan title). */
+  heading?:           string;
 } = {}) {
   const t = useTranslations('push');
   const [state, setState] = useState<PushState | 'loading'>('loading');
@@ -122,10 +127,12 @@ export function PushNotificationsToggle({
   if (hideWhenSubscribed && state === 'subscribed') return null;
 
   return (
-    <div
-      className="card p-4 flex items-center gap-4"
-      style={{ backgroundColor: 'var(--paper)' }}
-    >
+    <div>
+      {heading && <p className="eyebrow mb-3">{heading}</p>}
+      <div
+        className="card p-4 flex items-center gap-4"
+        style={{ backgroundColor: 'var(--paper)' }}
+      >
       <div
         className="w-11 h-11 rounded-full flex items-center justify-center text-2xl shrink-0"
         style={{
@@ -167,6 +174,7 @@ export function PushNotificationsToggle({
           {busy ? t('working') : t('turnOn')}
         </button>
       )}
+      </div>
     </div>
   );
 }

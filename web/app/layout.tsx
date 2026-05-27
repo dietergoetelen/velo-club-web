@@ -23,6 +23,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title:       t('title'),
     description: t('description'),
+    manifest:    '/static/manifest.webmanifest',
+    icons: {
+      icon:  [{ url: '/static/icon.svg',           type: 'image/svg+xml' }],
+      apple: [{ url: '/static/apple-icon-180.png', sizes: '180x180', type: 'image/png' }],
+    },
   };
 }
 

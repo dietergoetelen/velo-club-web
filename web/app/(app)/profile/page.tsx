@@ -28,10 +28,10 @@ export default async function ProfilePage() {
 
       <ProfileForm name={user.name} email={user.email} avatarUrl={avatarUrl} />
 
-      <section>
-        <p className="eyebrow mb-3">{t('notificationsHeading')}</p>
-        <PushNotificationsToggle />
-      </section>
+      {/* The component renders nothing on unsupported browsers (e.g. iOS
+          Safari outside a PWA), so the heading lives inside it — no orphan
+          title when the feature isn't available. */}
+      <PushNotificationsToggle heading={t('notificationsHeading')} />
     </div>
   );
 }
