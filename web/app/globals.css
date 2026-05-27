@@ -88,6 +88,16 @@ body {
   }
 }
 
+/* ─── iOS Safari auto-zoom guard ───────────────────────────────────────────
+   iOS zooms in when focusing any input with font-size < 16px. Annoying and
+   the zoom never reverts automatically. Forcing 16px on touch devices stops
+   the auto-zoom without disabling pinch-to-zoom (which would hurt a11y). */
+@media (hover: none) and (pointer: coarse) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
 /* ─── Component library ─────────────────────────────────────────────────── */
 @layer components {
 
