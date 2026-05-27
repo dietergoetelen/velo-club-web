@@ -12,11 +12,11 @@ function MapLoading() {
   );
 }
 
-const RideDetailMap = dynamic(() => import('./ride-detail-map'), {
+const RouteDetailMap = dynamic(() => import('./route-detail-map'), {
   ssr:     false,
   loading: MapLoading,
 });
 
-export default function RideMapClient({ coordinates }: { coordinates: [number, number][] }) {
-  return <RideDetailMap coordinates={coordinates} />;
+export default function RouteDetailMapClient({ coordinates }: { coordinates: [number, number][] }) {
+  return <RouteDetailMap coordinates={coordinates} />;
 }

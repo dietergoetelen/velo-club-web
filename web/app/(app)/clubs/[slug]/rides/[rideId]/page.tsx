@@ -5,7 +5,7 @@ import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { toggleAttendance } from '@/lib/actions/attendance';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import type { Attendance, Club, ClubMember, Route } from '@/lib/types';
-import { RideDetailLayout } from './ride-detail-layout';
+import { RouteDetailLayout } from '@/components/route-detail-layout';
 import { DeleteRideButton } from './delete-ride-button';
 
 function formatDate(iso: string) {
@@ -76,7 +76,7 @@ export default async function RideDetailPage({
   const isAttending = attendances.some(a => a.user === user.id);
 
   return (
-    <RideDetailLayout
+    <RouteDetailLayout
       coordinates={ride.coordinates}
       title={
         <>

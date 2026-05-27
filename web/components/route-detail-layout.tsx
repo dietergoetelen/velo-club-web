@@ -2,17 +2,18 @@
 
 import { type ReactNode, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import RideMapClient from './ride-map-client';
+import RouteDetailMapClient from './route-detail-map-client';
 
 /**
- * Responsive shell for the ride detail page.
+ * Responsive shell for any "view a single route" page (club ride detail,
+ * personal route detail).
  *
  * Desktop: 380 px left sidebar (title + details) and map filling the rest.
  * Mobile:  full-screen map with a bottom sheet (peek + expanded snap states)
  *          containing the title and details. Default is collapsed so the
  *          map is initially visible.
  */
-export function RideDetailLayout({
+export function RouteDetailLayout({
   coordinates,
   title,
   details,
@@ -21,6 +22,8 @@ export function RideDetailLayout({
   title:       ReactNode;
   details:     ReactNode;
 }) {
+  // Bottom-sheet labels live under `rides.detail` for historical reasons;
+  // they're generic enough to be reused by personal routes.
   const t = useTranslations('rides.detail');
 
   // Mobile sheet state. Desktop ignores it (`md:` overrides the inline height).
@@ -102,7 +105,7 @@ export function RideDetailLayout({
       {/* ══ Map ═════════════════════════════════════════════════════════════
            Mobile: the sheet is `fixed` so this flex-item fills the row.   */}
       <div className="flex-1 relative">
-        <RideMapClient coordinates={coordinates} />
+        <RouteDetailMapClient coordinates={coordinates} />
       </div>
     </div>
   );

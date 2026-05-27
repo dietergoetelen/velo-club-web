@@ -19,7 +19,7 @@ function BoundsFitter({ coordinates }: { coordinates: [number, number][] }) {
   return null;
 }
 
-export default function RideDetailMap({ coordinates }: Props) {
+export default function RouteDetailMap({ coordinates }: Props) {
   const defaultCenter: [number, number] = [50.50, 4.47];
   const start = coordinates[0] ?? null;
 

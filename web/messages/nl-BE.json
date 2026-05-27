@@ -278,6 +278,38 @@
     },
     "attend": {}
   },
+  "routes": {
+    "create": {
+      "title": "Nieuwe route",
+      "backToDashboard": "Dashboard",
+      "nameLabel": "Naam van de route",
+      "namePlaceholder": "bv. Zondagse koffierit",
+      "save": "Route opslaan →"
+    },
+    "edit": {
+      "title": "Route bewerken",
+      "backToRoute": "Terug naar route",
+      "nameLabel": "Naam van de route",
+      "save": "Wijzigingen opslaan →"
+    },
+    "detail": {
+      "distance": "Afstand",
+      "distanceUnit": "km",
+      "elevation": "Hoogtemeters",
+      "elevationUnit": "m winst",
+      "by": "Door {name}",
+      "downloadGpx": "⬇ Download GPX",
+      "edit": "✎ Bewerken",
+      "delete": "Verwijderen",
+      "deleteConfirm": "\"{name}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "back": "← Terug naar dashboard"
+    },
+    "dashboard": {
+      "heading": "Mijn routes",
+      "empty": "Nog geen routes — maak er een om mee te beginnen.",
+      "newRoute": "+ Nieuwe route"
+    }
+  },
   "routeEdit": {
     "recalculating": "herberekenen…",
     "hint": "Klik op de kaart om een waypoint toe te voegen, sleep een marker om die te verplaatsen, sleep rijen in de lijst om te herschikken, gebruik ✕ om te verwijderen.",
@@ -350,7 +382,11 @@
     "rideNotFound": "Rit niet gevonden.",
     "captainOnlyEditRoute": "Alleen de kapitein kan de strook bewerken.",
     "updateRouteFailed": "Kon wijzigingen niet opslaan. Probeer het opnieuw.",
-    "saveProfileFailed": "Kon de wijzigingen niet opslaan."
+    "saveProfileFailed": "Kon de wijzigingen niet opslaan.",
+    "routeNameRequired": "Geef je route een naam.",
+    "saveRouteFailed": "Kon de route niet opslaan. Probeer het opnieuw.",
+    "routeNotFound": "Route niet gevonden.",
+    "notRouteOwner": "Je kan alleen je eigen routes bewerken."
   },
   "footer": {
     "tagline": "Plan ritten, rij samen, verzamel de kilometers. Gemaakt voor clubs die graag de lange weg naar huis nemen.",

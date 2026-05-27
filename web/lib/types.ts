@@ -65,6 +65,19 @@ export interface Attendance extends PBRecord {
   user:  string; // relation → PB user id
 }
 
+/**
+ * Personal routes — routes attached to a user instead of a club. Used for
+ * drafts/experiments outside of any planned club ride. Visible to any
+ * authenticated user; only the owner can mutate.
+ */
+export interface PersonalRoute extends PBRecord {
+  user:        string;   // relation → PB user id (owner)
+  name:        string;
+  distance_km: number;
+  elevation_m: number;
+  coordinates: [number, number][]; // [lat, lng][]
+}
+
 // UI currently exposes just ❤️. The `emoji` column on ride_reactions is a
 // free-text field, so re-introducing more reactions is just a matter of
 // extending this union + array.

@@ -4,7 +4,8 @@ import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/session';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
-import type { Club, ClubMember, JoinRequest } from '@/lib/types';
+import { PersonalRouteCard } from '@/components/personal-route-card';
+import type { Club, ClubMember, JoinRequest, PersonalRoute } from '@/lib/types';
 
 function greetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
   const h = new Date().getHours();
@@ -39,6 +40,15 @@ export default async function DashboardPage() {
 
   const roleFor = (clubId: string): ClubMember['role'] | undefined =>
     memberships.find(m => m.club === clubId)?.role;
+
+  const myRoutes = await pb.collection('personal_routes')
+    .getFullList<PersonalRoute>({
+      filter: `user = "${user.id}"`,
+      sort:   '-created',
+    })
+    .catch(() => []);
+
+  const tRoutes = await getTranslations('routes.dashboard');
 
   const firstName = user.name?.split(' ')[0] || user.email.split('@')[0];
 
@@ -172,6 +182,40 @@ export default async function DashboardPage() {
                   {t('viewClub')}
                 </p>
               </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── My routes (personal, not tied to a club) ───────────────────── */}
+      <section>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <p className="eyebrow">{tRoutes('heading')}</p>
+            <span
+              className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center"
+              style={{
+                backgroundColor: 'var(--mint)',
+                border:    '2px solid var(--ink)',
+                boxShadow: '2px 2px 0px var(--ink)',
+              }}
+            >
+              {myRoutes.length}
+            </span>
+          </div>
+          <Link href="/routes/new" className="btn-primary">
+            {tRoutes('newRoute')}
+          </Link>
+        </div>
+
+        {myRoutes.length === 0 ? (
+          <div className="card p-8 text-center">
+            <p className="text-ink-soft text-sm">{tRoutes('empty')}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {myRoutes.map((route, i) => (
+              <PersonalRouteCard key={route.id} route={route} index={i} />
             ))}
           </div>
         )}

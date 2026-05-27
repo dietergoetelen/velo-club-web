@@ -25,11 +25,13 @@ export function buildGpx({
   coordinates,
 }: {
   name:        string;
-  date:        string;  // ISO date
+  /** Optional ISO date — used as the GPX metadata timestamp. Falls back to
+   *  the current time when omitted (personal routes have no ride date). */
+  date?:       string;
   coordinates: [number, number][];
 }): string {
   const safeName = escapeXml(name);
-  const time     = isoSeconds(date);
+  const time     = isoSeconds(date ?? new Date().toISOString());
 
   const points = coordinates
     .map(([lat, lng]) =>
