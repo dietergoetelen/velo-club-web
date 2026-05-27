@@ -5,6 +5,7 @@ import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/sessio
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
 import { PersonalRouteCard } from '@/components/personal-route-card';
+import { PushNotificationsToggle } from '@/components/push-notifications-toggle';
 import type { Club, ClubMember, JoinRequest, PersonalRoute } from '@/lib/types';
 
 function greetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
@@ -103,6 +104,10 @@ export default async function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Push notifications opt-in (vanishes once enabled — managed
+            from the profile page from then on) ──────────────────────────── */}
+      <PushNotificationsToggle hideWhenSubscribed />
 
       {/* ── My clubs ──────────────────────────────────────────────────── */}
       <section>

@@ -12,6 +12,8 @@ primary_region = 'ams'
   GRAPHHOPPER_URL = 'http://paceline-graphhopper.internal:8989'
   POCKETBASE_URL = 'http://paceline-pb.internal:8090'
   POCKETBASE_PUBLIC_URL = 'https://paceline-pb.fly.dev'
+  POCKETBASE_ADMIN_EMAIL = 'dieter.goetelen@hotmail.com'
+  POCKETBASE_ADMIN_PASSWORD = 'K6H3:AV_MW+7?&sc0Kjx'
 
 [http_service]
   internal_port = 3000

@@ -66,6 +66,18 @@ export interface Attendance extends PBRecord {
 }
 
 /**
+ * Web Push subscription. One row per browser/device per user — a single user
+ * can have several if they're logged in on phone + desktop. Endpoint is
+ * globally unique (it's the push service's address for that device).
+ */
+export interface PushSubscriptionRecord extends PBRecord {
+  user:     string;   // relation → PB user id
+  endpoint: string;
+  p256dh:   string;
+  auth:     string;
+}
+
+/**
  * Personal routes — routes attached to a user instead of a club. Used for
  * drafts/experiments outside of any planned club ride. Visible to any
  * authenticated user; only the owner can mutate.

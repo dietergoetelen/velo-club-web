@@ -23,6 +23,17 @@
     "signOut": "Afmelden",
     "editProfile": "Bewerk je profiel"
   },
+  "push": {
+    "onTitle": "Meldingen staan aan",
+    "onHint": "Je krijgt een melding wanneer er een nieuwe rit wordt gepland.",
+    "offTitle": "Krijg meldingen voor nieuwe ritten",
+    "offHint": "Zet meldingen aan om geen rit meer te missen.",
+    "deniedHint": "Meldingen zijn geblokkeerd in je browser. Pas de site-instellingen aan om ze opnieuw aan te zetten.",
+    "turnOn": "Zet aan",
+    "turnOff": "Zet uit",
+    "working": "Bezig…",
+    "ridePlannedBody": "Nieuwe rit gepland: {name}"
+  },
   "mapSearch": {
     "placeholder": "Zoek een adres of plaats…",
     "searching": "Zoeken…",
@@ -89,7 +100,8 @@
     "emailHint": "E-mail kan nog niet worden gewijzigd.",
     "photoLabel": "Profielfoto",
     "submit": "Wijzigingen opslaan →",
-    "submitLoading": "Opslaan…"
+    "submitLoading": "Opslaan…",
+    "notificationsHeading": "Meldingen"
   },
   "clubs": {
     "list": {

@@ -5,7 +5,8 @@ import { getTranslations } from 'next-intl/server';
 import { getToken, getCurrentUser } from '@/lib/session';
 import { getPBWithToken } from '@/lib/pocketbase';
 import { fetchThreeRoutes, fetchSegment } from '@/lib/graphhopper';
-import type { RideRoute } from '@/lib/types';
+import { sendPushToUsers } from '@/lib/push';
+import type { ClubMember, RideRoute } from '@/lib/types';
 
 // ── Generate ──────────────────────────────────────────────────────────────────
 
@@ -63,8 +64,9 @@ export async function saveRide(
     .catch(() => null);
   if (!membership) return t('captainOnlyPlan');
 
+  let createdId: string;
   try {
-    await pb.collection('routes').create({
+    const created = await pb.collection('routes').create({
       club:        clubId,
       created_by:  user.id,
       name,
@@ -76,9 +78,33 @@ export async function saveRide(
       status:      'proposed',
       schedule:    scheduleId,
     });
+    createdId = created.id;
   } catch (err) {
     console.error('[saveRide]', err);
     return t('saveRideFailed');
+  }
+
+  // Best-effort push to club members. Failures here don't fail the save.
+  try {
+    const members = await pb.collection('club_members')
+      .getFullList<ClubMember>({
+        filter: `club = "${clubId}" && user != "${user.id}"`,
+      })
+      .catch(() => []);
+    const memberIds = members.map(m => m.user);
+    if (memberIds.length > 0) {
+      const club = await pb.collection('clubs').getOne(clubId).catch(() => null);
+      const clubName = (club?.['name'] as string | undefined) ?? 'Zoesh';
+      const tPush = await getTranslations('push');
+      await sendPushToUsers(memberIds, {
+        title: clubName,
+        body:  tPush('ridePlannedBody', { name }),
+        url:   `/clubs/${slug}/rides/${createdId}`,
+        tag:   `ride-${createdId}`,
+      });
+    }
+  } catch (err) {
+    console.error('[saveRide] push failed', err);
   }
 
   redirect(`/clubs/${slug}`);
