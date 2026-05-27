@@ -37,15 +37,12 @@ export default async function RideEditPage({
   }
   if (ride.club !== club.id) notFound();
 
-  const [startLat, startLng] = ride.coordinates[0];
-
   return (
     <RideEdit
       rideId={ride.id}
       slug={slug}
       clubName={club.name}
       rideName={ride.name}
-      startPos={{ lat: startLat, lng: startLng }}
       coordinates={ride.coordinates}
       distance={ride.distance_km}
       elevation={ride.elevation_m}

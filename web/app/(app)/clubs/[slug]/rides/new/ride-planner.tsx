@@ -260,12 +260,14 @@ export function RidePlanner({
   clubStart: StartPos | null;
 }) {
   const t = useTranslations('rides.create');
-  const [startPos, setStartPos] = useState<StartPos | null>(clubStart);
-  // Mobile bottom-sheet state. Desktop ignores this entirely.
-  // Initial: open if a start is already known (form is the next step);
-  // collapsed otherwise (let the user see the map and tap to set start).
-  const [sheetOpen, setSheetOpen] = useState<boolean>(!!clubStart);
-  const prevStartRef = useRef<StartPos | null>(clubStart);
+  // Start position is always unset on mount. `clubStart` is only used to
+  // (a) center the map for context and (b) feed the "📍 Clubstart" shortcut
+  // button — the user still has to deliberately commit a start.
+  const [startPos, setStartPos] = useState<StartPos | null>(null);
+  // Mobile bottom-sheet starts collapsed so the user sees the map and can
+  // tap to set the start.
+  const [sheetOpen, setSheetOpen] = useState<boolean>(false);
+  const prevStartRef = useRef<StartPos | null>(null);
   useEffect(() => {
     // Auto-open the sheet the moment a start gets set from nothing —
     // the user just tapped the map and likely wants to continue setup.
@@ -333,18 +335,23 @@ export function RidePlanner({
   const [profile, setProfile]             = useState<string>('racingbike');
   const [isOpenRoute, setIsOpenRoute]     = useState(false);
 
-  const startManualEditing = (pos: StartPos) => {
+  const enterManualEditor = () => {
     setRoutes([]);
+    // Unique id per entry → RouteEditPanel's `key={selectedRoute.id}` changes,
+    // so React remounts it fresh. Without this, useRouteEdit's mount-only
+    // useMemo would retain waypoints from a previous Maak-zelf session.
     setSelectedRoute({
-      id:          'a',
+      id:          `manual-${Date.now()}`,
       label:       t('customLabel'),
       color:       '#FBBF24',
       distance:    0,
       elevation:   0,
-      coordinates: [[pos.lat, pos.lng]],
+      coordinates: [],         // no waypoints yet — first map click adds wp0
       score:       100,
       lollipopM:   0,
     });
+    setStartPos(null);          // belt-and-braces: anything carried over from
+                                // a previous mode shouldn't leave a stray pin
     setIsOpenRoute(true);
     setGenError(null);
     setStep('editing');
@@ -355,21 +362,28 @@ export function RidePlanner({
     setRoutes([]);
     setSelectedRoute(null);
     setGenError(null);
-    if (m === 'manual' && startPos) {
-      startManualEditing(startPos);
-    } else {
+    if (m === 'loop') {
+      // Loop mode: pre-fill the club's default start as a convenience.
+      // Captains generating loops virtually always want to start there;
+      // ✕ on the start row still lets them pick a different spot.
+      setStartPos(clubStart);
       setStep('setup');
+      return;
     }
+    if (m === 'manual') {
+      // Manual mode: skip the setup screen entirely. The user lands in the
+      // editor with no waypoints; the first map click drops waypoint #1.
+      // Map will be centered on `clubStart` (if any) for context.
+      setStartPos(null);
+      enterManualEditor();
+      return;
+    }
+    setStep('setup');
   };
 
-  // Manual mode: as soon as a start position lands (map click, geolocation,
-  // or "use club start"), jump straight into editing — no intermediate setup screen.
-  const acceptStart = (pos: StartPos | null) => {
-    setStartPos(pos);
-    if (pos && mode === 'manual' && step === 'setup') {
-      startManualEditing(pos);
-    }
-  };
+  // Used as the planner-map's onMapClick in the setup/picking views (loop mode).
+  // Manual mode never reaches this — clicks in its editor go to addWaypoint.
+  const acceptStart = (pos: StartPos | null) => setStartPos(pos);
 
   const backToModePicker = () => {
     setMode(null);
@@ -452,15 +466,15 @@ export function RidePlanner({
   // RouteEditPanel hosts the segment-based useRouteEdit hook. Each entry
   // remounts it (via React's tree-diff on this branch), so state resets
   // cleanly when the captain re-picks a different route.
-  if (step === 'editing' && selectedRoute && startPos) {
+  if (step === 'editing' && selectedRoute) {
     return (
       <RouteEditPanel
         key={selectedRoute.id}
-        start={startPos}
         initialPolyline={selectedRoute.coordinates}
         initialElevation={selectedRoute.elevation}
         profile={profile}
         open={isOpenRoute}
+        clubStart={clubStart}
         header={
           <>
             <button
@@ -769,9 +783,6 @@ export function RidePlanner({
               )}
             </button>
           )}
-          {step !== 'picking' && mode === 'manual' && !startPos && (
-            <p className="text-xs text-ink-soft">{t('manualWaitingForStart')}</p>
-          )}
 
           {/* ── Route cards ── */}
           {step === 'picking' && (
@@ -847,6 +858,7 @@ export function RidePlanner({
       <div className="flex-1 relative">
         <RouteMap
           startPos={startPos}
+          clubStart={clubStart}
           routes={routes}
           selectedRouteId={selectedRoute?.id ?? null}
           onMapClick={acceptStart}

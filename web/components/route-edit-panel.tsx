@@ -42,27 +42,28 @@ export interface RouteEditState {
  *   - `footer`: optional content shown below the save form.
  */
 export function RouteEditPanel({
-  start,
   initialPolyline,
   initialElevation,
   profile,
   open,
+  clubStart,
   header,
   saveSlot,
   footer,
 }: {
-  start:            { lat: number; lng: number };
   initialPolyline:  [number, number][];
   initialElevation: number;
   profile:          string;
   open?:            boolean;
+  /** Optional: centre the empty editor on this point. Used by the planner's
+   *  manual mode where the user starts without any waypoints. */
+  clubStart?:       { lat: number; lng: number } | null;
   header:           ReactNode;
   saveSlot:         (s: RouteEditState) => ReactNode;
   footer?:          ReactNode;
 }) {
   const t = useTranslations('routeEdit');
   const edit = useRouteEdit({
-    start,
     polyline:        initialPolyline,
     totalElevationM: initialElevation,
     profile,
@@ -82,10 +83,10 @@ export function RouteEditPanel({
     swipeHandledRef.current = false;
   };
   const onSheetTouchEnd = (e: React.TouchEvent) => {
-    const start = swipeStartYRef.current;
+    const startY = swipeStartYRef.current;
     swipeStartYRef.current = null;
-    if (start === null) return;
-    const dy = e.changedTouches[0].clientY - start;
+    if (startY === null) return;
+    const dy = e.changedTouches[0].clientY - startY;
     if (Math.abs(dy) < 30) return;
     swipeHandledRef.current = true;
     setSheetOpen(dy < 0);
@@ -237,7 +238,8 @@ export function RouteEditPanel({
            Mobile: the sheet is `fixed` so this flex-item fills the row.   */}
       <div className="flex-1 relative">
         <RouteMap
-          startPos={start}
+          startPos={null}
+          clubStart={clubStart}
           routes={[]}
           selectedRouteId={null}
           onMapClick={() => { /* not used in edit mode */ }}

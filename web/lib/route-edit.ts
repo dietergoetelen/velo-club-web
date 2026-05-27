@@ -1,11 +1,17 @@
 // Shared helpers for the route-edit experience used by both the new-route
 // planner and the ride-detail edit page.
 //
-// Model: the route is split into SEGMENTS between consecutive points in the
-// list [start, w1, w2, …, wN, start]. On entry, segments are sliced from the
-// original polyline so the loop is byte-identical to what was saved/picked.
-// Only edited segments are re-routed via GraphHopper — unchanged ones stay
-// exactly as they were.
+// Model: the route is just an ordered list of WAYPOINTS. The first waypoint
+// IS the start — no separate "start" anchor. In closed mode the route loops
+// back to waypoints[0] at the end; in open mode it ends at the last waypoint.
+//
+// Segments connect consecutive points in:
+//   open   → waypoints
+//   closed → [...waypoints, waypoints[0]]
+//
+// segments[i] connects points[i] → points[i+1]. On entry, segments are
+// sliced from the original polyline so the loop is byte-identical to what
+// was saved/picked. Only edited segments are re-routed via GraphHopper.
 
 'use client';
 
@@ -47,8 +53,22 @@ export function closestPolylineIndex(
   return best;
 }
 
+/**
+ * Build waypoints from a multi-point polyline.
+ *
+ *   - waypoints[0] is always polyline[0] (the start anchor).
+ *   - ANCHOR_COUNT intermediate anchors are picked at evenly-spaced indices.
+ *   - For closed polylines (last point == first), the closing point isn't
+ *     added as a separate waypoint — the closing is implicit.
+ */
 export function buildAnchors(polyline: [number, number][]): Waypoint[] {
-  const out: Waypoint[] = [];
+  if (polyline.length < 1) return [];
+  const out: Waypoint[] = [{
+    id:          newWaypointId(),
+    lat:         polyline[0][0],
+    lng:         polyline[0][1],
+    polylineIdx: 0,
+  }];
   if (polyline.length < 4) return out;
   const step = Math.floor(polyline.length / (ANCHOR_COUNT + 1));
   if (step < 1) return out;
@@ -88,21 +108,32 @@ export function flattenSegments(segments: Segment[]): [number, number][] {
   return out;
 }
 
-// Slice the original polyline at each anchor's polylineIdx to produce the
-// initial segments, with elevation distributed proportional to (haversine)
-// distance from the original total.
+/**
+ * Slice the original polyline at each waypoint's polylineIdx to produce the
+ * initial segments. Elevation is distributed proportional to (haversine)
+ * distance from the original total.
+ *
+ * Open mode:   segments = N-1 (between consecutive waypoints).
+ * Closed mode: segments = N (last one closes back, using polyline[last] as
+ *              the boundary — assumes the source polyline already closes).
+ */
 function buildInitialSegments({
   polyline,
   waypoints,
   totalElevationM,
+  open,
 }: {
   polyline:        [number, number][];
   waypoints:       Waypoint[];
   totalElevationM: number;
+  open:            boolean;
 }): Segment[] {
+  if (waypoints.length < 2) return [];
   const sorted  = [...waypoints].sort((a, b) => a.polylineIdx - b.polylineIdx);
-  const indices = [0, ...sorted.map(w => w.polylineIdx), polyline.length - 1];
-  const segs:   Segment[] = [];
+  const indices: number[] = sorted.map(w => w.polylineIdx);
+  if (!open) indices.push(polyline.length - 1);
+
+  const segs: Segment[] = [];
   for (let i = 0; i < indices.length - 1; i++) {
     const slice = polyline.slice(indices[i], indices[i + 1] + 1);
     segs.push({
@@ -118,20 +149,40 @@ function buildInitialSegments({
   return segs;
 }
 
+// ── Adjacency helpers ────────────────────────────────────────────────────────
+
+/**
+ * Segment indices touching waypoint `idx` (the segments whose endpoints
+ * include that waypoint). Used to know which segments need recalculation
+ * after a move.
+ */
+function adjacentSegments(idx: number, total: number, open: boolean): number[] {
+  if (total < 2) return [];
+  const out = new Set<number>();
+  // Outgoing — the segment that starts at wp[idx]
+  if (idx < total - 1)      out.add(idx);
+  else if (!open)           out.add(total - 1);    // closing segment (wp[N-1] → wp[0])
+  // Incoming — the segment that ends at wp[idx]
+  if (idx > 0)              out.add(idx - 1);
+  else if (!open)           out.add(total - 1);    // closing segment, for wp[0]
+  return [...out];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface UseRouteEditArgs {
-  start:           { lat: number; lng: number };
   polyline:        [number, number][];
   totalElevationM: number;
   profile:         string;
   /**
-   * If true, the route is point-to-point (start → ... → last waypoint) and
-   * does NOT close back to the start. Default false (closed loop).
+   * If true, the route is point-to-point (waypoints[0] → … → waypoints[N-1])
+   * and does NOT close back to the start. Default false (closed loop).
    */
   open?:           boolean;
 }
 
 export interface UseRouteEdit {
-  waypoints:        Waypoint[];      // ordered by polylineIdx
+  waypoints:        Waypoint[];      // ordered as visited; waypoints[0] is the start
   polyline:         [number, number][]; // flattened from segments
   distance:         number;            // km, 1 decimal
   elevation:        number;            // m, integer
@@ -149,29 +200,39 @@ export interface UseRouteEdit {
  * segments on changes.
  */
 export function useRouteEdit({
-  start,
   polyline,
   totalElevationM,
   profile,
   open = false,
 }: UseRouteEditArgs): UseRouteEdit {
-  // Open mode = point-to-point route (start → wp1 → ... → wpN). Loop mode =
-  // start → wp1 → ... → wpN → start. The single difference is whether the
-  // points array we feed to GraphHopper closes back to start.
+  // In open mode the polyline IS the waypoints visited in order. In closed
+  // mode the polyline closes back to waypoints[0] for routing purposes —
+  // GraphHopper sees `[...wps, wps[0]]`.
   const buildPoints = useCallback(
-    (wps: { lat: number; lng: number }[]) =>
-      open ? [start, ...wps] : [start, ...wps, start],
-    [open, start],
+    (wps: { lat: number; lng: number }[]) => {
+      if (wps.length === 0) return [];
+      return open ? wps : [...wps, wps[0]];
+    },
+    [open],
   );
 
   // Initial state — derived once from the inputs.
   const initial = useMemo(() => {
-    if (open && polyline.length <= 1) {
-      // Empty open route — no waypoints, no segments yet.
-      return { waypoints: [], segments: [] };
+    if (polyline.length === 0) {
+      return { waypoints: [] as Waypoint[], segments: [] as Segment[] };
+    }
+    if (polyline.length === 1) {
+      // Just a seed point — wp0 only, no segments yet.
+      const wp0: Waypoint = {
+        id:          newWaypointId(),
+        lat:         polyline[0][0],
+        lng:         polyline[0][1],
+        polylineIdx: 0,
+      };
+      return { waypoints: [wp0], segments: [] as Segment[] };
     }
     const wps  = buildAnchors(polyline);
-    const segs = buildInitialSegments({ polyline, waypoints: wps, totalElevationM });
+    const segs = buildInitialSegments({ polyline, waypoints: wps, totalElevationM, open });
     return { waypoints: wps, segments: segs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);  // intentionally only on mount; props are treated as initial values
@@ -185,8 +246,8 @@ export function useRouteEdit({
   const callSeq = useRef(0);
 
   // Recalc the segments at the given indices (multiple in parallel).
-  // points[i] = the i-th point in [start, ...waypoints, start]
-  // segIdx   = index of segments[] (segments[i] connects points[i] → points[i+1])
+  // pointsAtCall[i] is the i-th point in the route; segments[i] connects
+  // pointsAtCall[i] → pointsAtCall[i+1].
   const recalcAt = useCallback(async (
     pointsAtCall:   { lat: number; lng: number }[],
     segIndices:     number[],
@@ -229,12 +290,18 @@ export function useRouteEdit({
     );
     const newWp: Waypoint = { id: newWaypointId(), lat, lng, polylineIdx };
 
-    // Open routes (drawing mode): the user is laying down waypoints in visit
-    // order, so always append. Closed loops (refining a generated route):
-    // insert at the position closest to where the user clicked along the
-    // existing path — natural for "add a detour here".
+    // ── First waypoint: becomes wp0, no segments yet ────────────────────────
+    if (waypoints.length === 0) {
+      setWaypoints([newWp]);
+      setSegments([]);
+      return;
+    }
+
+    // Open routes (drawing mode): always append in visit order.
+    // Closed loops (refining a generated route): insert near the closest
+    // existing segment — natural for "add a detour here".
     let baseList: Waypoint[];
-    let insertAt:  number;
+    let insertAt: number;
     if (open) {
       baseList = waypoints;
       insertAt = waypoints.length;
@@ -248,10 +315,34 @@ export function useRouteEdit({
     const nextWps = [...baseList.slice(0, insertAt), newWp, ...baseList.slice(insertAt)];
     const points  = buildPoints(nextWps);
 
-    // In open mode appending past the last waypoint, there's no existing
-    // segment to split — just append a single straight-line placeholder.
+    // ── Second waypoint (first segment ever) ────────────────────────────────
+    if (waypoints.length === 1) {
+      // Open: wp0 → newWp (one segment).
+      // Closed: wp0 → newWp → wp0 (two segments — both routed equally).
+      const newSegs: Segment[] = open
+        ? [{
+            coordinates: [[waypoints[0].lat, waypoints[0].lng], [lat, lng]],
+            distance: 0, elevation: 0,
+          }]
+        : [
+            {
+              coordinates: [[waypoints[0].lat, waypoints[0].lng], [lat, lng]],
+              distance: 0, elevation: 0,
+            },
+            {
+              coordinates: [[lat, lng], [waypoints[0].lat, waypoints[0].lng]],
+              distance: 0, elevation: 0,
+            },
+          ];
+      setWaypoints(nextWps);
+      setSegments(newSegs);
+      void recalcAt(points, newSegs.map((_, i) => i));
+      return;
+    }
+
+    // ── Open mode + append at end: extend the chain by one segment ──────────
     if (open && insertAt === waypoints.length) {
-      const prev = waypoints.length > 0 ? waypoints[waypoints.length - 1] : start;
+      const prev = waypoints[waypoints.length - 1];
       const newSeg: Segment = {
         coordinates: [[prev.lat, prev.lng], [lat, lng]],
         distance:    0,
@@ -263,10 +354,11 @@ export function useRouteEdit({
       return;
     }
 
-    // Approximate placeholders: split the old segment's polyline at the
-    // closest point to the click so the visual roughly matches reality while
-    // GH recalculates the two halves.
-    const oldSeg = segments[insertAt] ?? { coordinates: [], distance: 0, elevation: 0 };
+    // ── Closed mode + interior insert: split segment[insertAt-1] in two ─────
+    // (the segment between sortedWps[insertAt-1] and sortedWps[insertAt],
+    //  or the closing segment when insertAt === waypoints.length).
+    const oldSegIdx = insertAt - 1;
+    const oldSeg = segments[oldSegIdx] ?? { coordinates: [], distance: 0, elevation: 0 };
     const splitIdx = oldSeg.coordinates.length > 1
       ? closestPolylineIndex(oldSeg.coordinates, lat, lng)
       : 0;
@@ -282,17 +374,17 @@ export function useRouteEdit({
       elevation:   oldSeg.elevation * (1 - ratioA),
     };
     const nextSegs = [
-      ...segments.slice(0, insertAt),
+      ...segments.slice(0, oldSegIdx),
       placeholderA,
       placeholderB,
-      ...segments.slice(insertAt + 1),
+      ...segments.slice(oldSegIdx + 1),
     ];
 
     setWaypoints(nextWps);
     setSegments(nextSegs);
 
-    void recalcAt(points, [insertAt, insertAt + 1]);
-  }, [waypoints, segments, start, recalcAt, buildPoints, open]);
+    void recalcAt(points, [oldSegIdx, oldSegIdx + 1]);
+  }, [waypoints, segments, recalcAt, buildPoints, open]);
 
   const moveWaypoint = useCallback((id: string, lat: number, lng: number) => {
     const idx = waypoints.findIndex(w => w.id === id);
@@ -303,11 +395,8 @@ export function useRouteEdit({
     setWaypoints(next);
 
     const points = buildPoints(next);
-    // Adjacent segments around waypoint `idx`: segments[idx] (prev→wp) and
-    // segments[idx+1] (wp→next). The trailing segment doesn't exist for the
-    // last waypoint in open mode.
-    const adj = open && idx === next.length - 1 ? [idx] : [idx, idx + 1];
-    void recalcAt(points, adj);
+    const adj    = adjacentSegments(idx, next.length, open);
+    if (adj.length > 0) void recalcAt(points, adj);
   }, [waypoints, segments, recalcAt, buildPoints, open]);
 
   const deleteWaypoint = useCallback((id: string) => {
@@ -315,26 +404,75 @@ export function useRouteEdit({
     if (idx < 0) return;
     const nextWps = waypoints.filter((_, i) => i !== idx);
 
-    // Open mode + deleting the last waypoint: just drop its incoming segment,
-    // no merge or recalc needed (there's no outgoing segment to splice with).
-    if (open && idx === waypoints.length - 1) {
-      setWaypoints(nextWps);
-      setSegments(segments.slice(0, idx));
+    // Everything gone.
+    if (nextWps.length === 0) {
+      setWaypoints([]);
+      setSegments([]);
       return;
     }
 
-    // Merge segments[idx] and segments[idx+1] into one placeholder.
-    const placeholder = segments[idx] ?? { coordinates: [], distance: 0, elevation: 0 };
+    // Only one waypoint left → no segments.
+    if (nextWps.length === 1) {
+      setWaypoints(nextWps);
+      setSegments([]);
+      return;
+    }
+
+    // ── Open mode + first wp removed: drop segment[0]; new wp0 is old wp1 ──
+    if (open && idx === 0) {
+      setWaypoints(nextWps);
+      setSegments(segments.slice(1));
+      return;
+    }
+
+    // ── Open mode + last wp removed: drop segment[N-2] (now N-1 wps → N-2 segs)
+    if (open && idx === waypoints.length - 1) {
+      setWaypoints(nextWps);
+      setSegments(segments.slice(0, -1));
+      return;
+    }
+
+    // ── Closed mode + first wp removed: the closing segment (wp[N-1] → wp[0])
+    //    and segment[0] (wp[0] → wp[1]) collapse into a single placeholder
+    //    wp[N-1] → wp[1], placed at the new last (closing) index.
+    if (!open && idx === 0) {
+      const prevWp = waypoints[waypoints.length - 1];   // last wp = will close to new wp0
+      const nextWp = waypoints[1];                       // becomes the new wp0
+      const placeholder: Segment = {
+        coordinates: [[prevWp.lat, prevWp.lng], [nextWp.lat, nextWp.lng]],
+        distance:    0,
+        elevation:   0,
+      };
+      // Drop the old segment[0], keep middle segments, replace the old
+      // closing segment with the placeholder.
+      const middle = segments.slice(1, waypoints.length - 1);
+      const nextSegs = [...middle, placeholder];
+      setWaypoints(nextWps);
+      setSegments(nextSegs);
+      const points = buildPoints(nextWps);
+      void recalcAt(points, [nextSegs.length - 1]);
+      return;
+    }
+
+    // ── General case (closed middle, closed last, open middle):
+    //    merge segment[idx-1] and segment[idx] into one placeholder.
+    const prevWp = waypoints[idx - 1];
+    const nextWp = waypoints[idx + 1] ?? waypoints[0];  // wrap in closed mode
+    const placeholder: Segment = {
+      coordinates: [[prevWp.lat, prevWp.lng], [nextWp.lat, nextWp.lng]],
+      distance:    0,
+      elevation:   0,
+    };
     const nextSegs = [
-      ...segments.slice(0, idx),
+      ...segments.slice(0, idx - 1),
       placeholder,
-      ...segments.slice(idx + 2),
+      ...segments.slice(idx + 1),
     ];
     setWaypoints(nextWps);
     setSegments(nextSegs);
 
     const points = buildPoints(nextWps);
-    void recalcAt(points, [idx]);
+    void recalcAt(points, [idx - 1]);
   }, [waypoints, segments, recalcAt, buildPoints, open]);
 
   const reorderWaypoints = useCallback((fromIdx: number, toIdx: number) => {
@@ -364,7 +502,9 @@ export function useRouteEdit({
 
     setWaypoints(reindexed);
     setSegments(placeholders);
-    void recalcAt(pts, placeholders.map((_, i) => i));
+    if (placeholders.length > 0) {
+      void recalcAt(pts, placeholders.map((_, i) => i));
+    }
   }, [waypoints, recalcAt, buildPoints]);
 
   const flatPolyline = useMemo(() => flattenSegments(segments), [segments]);

@@ -81,7 +81,10 @@ export interface RideReaction extends PBRecord {
 // ── Route planner ─────────────────────────────────────────────────────────────
 
 export interface RideRoute {
-  id:          'a' | 'b' | 'c';
+  // 'a' | 'b' | 'c' for the three generated loop variants; freeform string
+  // (e.g. `manual-<timestamp>`) for the manual editor's session key so React
+  // remounts the editor on each re-entry instead of recycling stale state.
+  id:          string;
   label:       string;
   color:       string;
   distance:    number;              // km, 1 decimal

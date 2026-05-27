@@ -6,14 +6,11 @@ import { useTranslations } from 'next-intl';
 import { updateRideRoute } from '@/lib/actions/rides';
 import { RouteEditPanel } from '@/components/route-edit-panel';
 
-type StartPos = { lat: number; lng: number };
-
 export function RideEdit({
   rideId,
   slug,
   clubName,
   rideName,
-  startPos,
   coordinates,
   distance,
   elevation,
@@ -22,7 +19,6 @@ export function RideEdit({
   slug:        string;
   clubName:    string;
   rideName:    string;
-  startPos:    StartPos;
   coordinates: [number, number][];
   distance:    number;
   elevation:   number;
@@ -32,7 +28,6 @@ export function RideEdit({
 
   return (
     <RouteEditPanel
-      start={startPos}
       initialPolyline={coordinates}
       initialElevation={elevation}
       profile="bike"

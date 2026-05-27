@@ -45,13 +45,17 @@ function ClickHandler({
 function BoundsFitter({
   routes,
   startPos,
+  clubStart,
   editing,
   editPolyline,
+  waypoints,
 }: {
   routes:        RideRoute[];
   startPos:      StartPos | null;
+  clubStart?:    StartPos | null;
   editing:       boolean;
   editPolyline?: [number, number][];
+  waypoints?:    { lat: number; lng: number }[];
 }) {
   const map = useMap();
   const fitOnceForEditing = useRef(false);
@@ -65,9 +69,21 @@ function BoundsFitter({
       if (editPolyline && editPolyline.length >= 2) {
         // Existing route — fit to its bounds.
         map.fitBounds(editPolyline as [number, number][], { padding: [48, 48] });
+      } else if (waypoints && waypoints.length >= 2) {
+        // Multiple waypoints but segments haven't computed yet — fit to them.
+        map.fitBounds(
+          waypoints.map(w => [w.lat, w.lng] as [number, number]),
+          { padding: [48, 48] },
+        );
+      } else if (waypoints && waypoints.length === 1) {
+        // Just a seed waypoint — keep a friendly zoom (fitBounds on a single
+        // point would zoom to max).
+        map.setView([waypoints[0].lat, waypoints[0].lng], 13);
+      } else if (clubStart) {
+        // Empty editor — show the club's neighbourhood so the user has
+        // context for where to drop their first waypoint.
+        map.setView([clubStart.lat, clubStart.lng], 13);
       } else if (startPos) {
-        // Empty/single-point polyline — center on start. fitBounds on a
-        // single point would zoom to max; use a friendly default zoom.
         map.setView([startPos.lat, startPos.lng], 13);
       }
       fitOnceForEditing.current = true;
@@ -79,8 +95,12 @@ function BoundsFitter({
       if (all.length) map.fitBounds(all, { padding: [48, 48] });
     } else if (startPos) {
       map.setView([startPos.lat, startPos.lng], 13);
+    } else if (clubStart) {
+      // No commit yet — center on the club's default location so the user
+      // has visual context for where to drop their start.
+      map.setView([clubStart.lat, clubStart.lng], 13);
     }
-  }, [routes, startPos, map, editing, editPolyline]);
+  }, [routes, startPos, clubStart, map, editing, editPolyline, waypoints]);
 
   return null;
 }
@@ -107,6 +127,7 @@ function waypointIcon(n: number): L.DivIcon {
 
 type Props = {
   startPos:        StartPos | null;
+  clubStart?:      StartPos | null;
   routes:          RideRoute[];
   selectedRouteId: string | null;
   onMapClick:      (pos: StartPos) => void;
@@ -123,6 +144,7 @@ type Props = {
 
 export default function RouteMap({
   startPos,
+  clubStart       = null,
   routes,
   selectedRouteId,
   onMapClick,
@@ -160,8 +182,10 @@ export default function RouteMap({
       <BoundsFitter
         routes={routes}
         startPos={startPos}
+        clubStart={clubStart}
         editing={editing}
         editPolyline={editPolyline}
+        waypoints={waypoints}
       />
 
       {/* ── Routes ── (hidden in edit mode; the editPolyline takes over) */}
@@ -198,8 +222,10 @@ export default function RouteMap({
         </>
       )}
 
-      {/* ── Start marker ── amber circle, matches design system ── */}
-      {startPos && (
+      {/* ── Start marker ── amber circle, shown in the planner's setup view.
+            In edit mode the start IS waypoints[0] and is rendered below as
+            a numbered marker, so we skip this to avoid duplicate pins. */}
+      {startPos && !editing && (
         <CircleMarker
           center={[startPos.lat, startPos.lng]}
           radius={11}
