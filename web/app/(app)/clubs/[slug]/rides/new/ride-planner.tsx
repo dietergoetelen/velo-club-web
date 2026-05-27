@@ -172,7 +172,9 @@ function DateTimeFields({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Stack on narrow viewports — native date/time inputs need ~150px + the
+          panel sits at ~360 px wide on phones, so two columns overflow. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="field-label">{t('dateLabel')}</label>
           <input
