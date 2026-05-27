@@ -200,10 +200,6 @@
     "reactions": {
       "toggleAria": "Reageer met {emoji}"
     },
-    "share": {
-      "share": "Delen",
-      "failed": "Sorry, delen mislukte. Probeer het opnieuw."
-    },
     "detail": {
       "dateTimeLabel": "Datum & tijd",
       "startingAt": "Vertrek om {time}",

@@ -3,10 +3,6 @@ import { getTranslations } from 'next-intl/server';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import { RoutePreview } from '@/components/route-preview';
 import { ReactionRow } from '@/components/reaction-row';
-// Share-to-Instagram is currently disabled — see TODO in the social row below.
-// Import kept so re-enabling is one uncomment away.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ShareButton } from '@/components/share-button';
 import type { ReactionEmoji, Route } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
@@ -24,8 +20,6 @@ function formatTime(iso: string) {
 export async function RideCard({
   ride,
   slug,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  clubName,
   index,
   scheduleLabel,
   attendees,
@@ -35,7 +29,6 @@ export async function RideCard({
 }: {
   ride:                Route;
   slug:                string;
-  clubName:            string;
   index:               number;
   scheduleLabel?:      string;
   attendees:           StackedUser[];
@@ -104,29 +97,13 @@ export async function RideCard({
             <span className="text-xs text-ink-soft">{t('noOneYet')}</span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* TODO: share-to-Instagram is broken — the generated image looks
-              right in dev (download), but `navigator.share({ files })` rejects
-              the file on mobile (likely a MIME / Satori-output issue, or
-              iOS Safari being picky about PNG payload size). Re-enable once
-              the share flow has been debugged on a real device. The route
-              handler at /clubs/<slug>/rides/<rideId>/share-image and the
-              ShareButton component are left in place so the investigation
-              has a starting point. */}
-          {/* <ShareButton
-            slug={slug}
-            rideId={ride.id}
-            rideName={ride.name}
-            clubName={clubName}
-          /> */}
-          <ReactionRow
-            rideId={ride.id}
-            slug={slug}
-            counts={reactionCounts}
-            currentUserReaction={currentUserReaction}
-            disabled={!canReact}
-          />
-        </div>
+        <ReactionRow
+          rideId={ride.id}
+          slug={slug}
+          counts={reactionCounts}
+          currentUserReaction={currentUserReaction}
+          disabled={!canReact}
+        />
       </div>
     </article>
   );
