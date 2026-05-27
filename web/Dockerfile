@@ -8,6 +8,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, so
+# they have to be present *here*, not in the runtime container. Set via
+# fly.toml's `[build.args]` or `fly deploy --build-arg ...`. Fly's `[env]`
+# block is applied at runtime — too late, the bundle is already compiled.
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
+
 RUN npm run build
 
 FROM node:24-alpine AS runner
