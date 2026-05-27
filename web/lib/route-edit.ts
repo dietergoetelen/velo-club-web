@@ -57,9 +57,13 @@ export function closestPolylineIndex(
  * Build waypoints from a multi-point polyline.
  *
  *   - waypoints[0] is always polyline[0] (the start anchor).
- *   - ANCHOR_COUNT intermediate anchors are picked at evenly-spaced indices.
- *   - For closed polylines (last point == first), the closing point isn't
- *     added as a separate waypoint — the closing is implicit.
+ *   - ANCHOR_COUNT intermediate anchors at evenly-spaced indices.
+ *   - The final point (polyline[length-1]) is anchored explicitly. For
+ *     closed polylines (e.g. generated loops) this coincides geographically
+ *     with waypoints[0]; without this anchor, opening the route in the
+ *     editor would silently truncate the return-to-start leg. For open
+ *     polylines (manual routes) it coincides with the user's last placed
+ *     waypoint, again so no tail polyline data is lost on re-edit.
  */
 export function buildAnchors(polyline: [number, number][]): Waypoint[] {
   if (polyline.length < 1) return [];
@@ -69,15 +73,21 @@ export function buildAnchors(polyline: [number, number][]): Waypoint[] {
     lng:         polyline[0][1],
     polylineIdx: 0,
   }];
-  if (polyline.length < 4) return out;
-  const step = Math.floor(polyline.length / (ANCHOR_COUNT + 1));
-  if (step < 1) return out;
-  for (let i = 1; i <= ANCHOR_COUNT; i++) {
-    const idx = i * step;
-    if (idx <= 0 || idx >= polyline.length - 1) continue;
-    const [lat, lng] = polyline[idx];
-    out.push({ id: newWaypointId(), lat, lng, polylineIdx: idx });
+  if (polyline.length < 2) return out;
+  if (polyline.length >= 4) {
+    const step = Math.floor(polyline.length / (ANCHOR_COUNT + 1));
+    if (step >= 1) {
+      for (let i = 1; i <= ANCHOR_COUNT; i++) {
+        const idx = i * step;
+        if (idx <= 0 || idx >= polyline.length - 1) continue;
+        const [lat, lng] = polyline[idx];
+        out.push({ id: newWaypointId(), lat, lng, polylineIdx: idx });
+      }
+    }
   }
+  const lastIdx = polyline.length - 1;
+  const [lat, lng] = polyline[lastIdx];
+  out.push({ id: newWaypointId(), lat, lng, polylineIdx: lastIdx });
   return out;
 }
 
@@ -131,7 +141,13 @@ function buildInitialSegments({
   if (waypoints.length < 2) return [];
   const sorted  = [...waypoints].sort((a, b) => a.polylineIdx - b.polylineIdx);
   const indices: number[] = sorted.map(w => w.polylineIdx);
-  if (!open) indices.push(polyline.length - 1);
+  // In closed mode, ensure the closing slice index is present. buildAnchors
+  // now always emits a waypoint at polyline.length-1, so the guard prevents
+  // a duplicate (which would produce a zero-length last segment).
+  if (!open) {
+    const lastIdx = polyline.length - 1;
+    if (indices[indices.length - 1] !== lastIdx) indices.push(lastIdx);
+  }
 
   const segs: Segment[] = [];
   for (let i = 0; i < indices.length - 1; i++) {

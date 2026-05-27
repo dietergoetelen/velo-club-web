@@ -11,10 +11,12 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { generateRoutes } from '@/lib/actions/rides';
 import { RouteEditPanel, type RouteEditState } from '@/components/route-edit-panel';
+import { LibraryPickerDialog } from '@/components/library-picker-dialog';
+import type { LibraryEntry } from '@/lib/actions/route-library';
 import type { RideRoute } from '@/lib/types';
 
 type StartPos = { lat: number; lng: number };
-type Mode     = 'loop' | 'manual';
+type Mode     = 'loop' | 'manual' | 'library';
 type Step     = 'mode' | 'setup' | 'generating' | 'picking' | 'editing';
 
 function MapLoading() {
@@ -65,6 +67,10 @@ export interface RoutePlannerShellProps {
   /** Club default start. When set, used as the "📍 Clubstart" shortcut
    *  and as the map's initial center. */
   clubStart?: StartPos | null;
+
+  /** Enable the "📚 Uit bibliotheek" mode card. Personal-route library is
+   *  loaded for the given club (members' routes are surfaced first). */
+  libraryClubId?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,7 +176,8 @@ export function RoutePlannerShell({
   setupExtras,
   pickingSaveSlot,
   editorSaveSlot,
-  clubStart = null,
+  clubStart      = null,
+  libraryClubId,
 }: RoutePlannerShellProps) {
   const t = useTranslations('rides.create');
 
@@ -213,6 +220,8 @@ export function RoutePlannerShell({
     setSheetOpen(o => !o);
   };
 
+  const [libraryOpen, setLibraryOpen] = useState(false);
+
   const [isPending, startTransition] = useTransition();
 
   // ── Mode handling ──────────────────────────────────────────────────────
@@ -250,7 +259,41 @@ export function RoutePlannerShell({
       enterManualEditor();
       return;
     }
+    if (m === 'library') {
+      // Library is a transient mode: the user picks a route from the dialog,
+      // then we drop them into the editor with that polyline pre-loaded.
+      // Until they pick, keep the mode picker visible behind the modal.
+      setStep('mode');
+      setLibraryOpen(true);
+      return;
+    }
     setStep('setup');
+  };
+
+  const handleLibraryPick = (entry: LibraryEntry) => {
+    setLibraryOpen(false);
+    setRoutes([]);
+    setSelectedRoute({
+      id:          `library-${entry.id}-${Date.now()}`,
+      label:       entry.name,
+      color:       '#FBBF24',
+      distance:    entry.distance_km,
+      elevation:   entry.elevation_m,
+      coordinates: entry.coordinates,
+      score:       100,
+      lollipopM:   0,
+    });
+    setStartPos(null);
+    setGenError(null);
+    setStep('editing');
+  };
+
+  const handleLibraryClose = () => {
+    setLibraryOpen(false);
+    // If the user backed out without picking, drop them back to the mode
+    // picker (mode was set to 'library' on entry, leaving it stuck would
+    // disable the picker cards).
+    if (mode === 'library') setMode(null);
   };
 
   const acceptStart = (pos: StartPos | null) => setStartPos(pos);
@@ -441,6 +484,14 @@ export function RoutePlannerShell({
                 description={t('modeManualDescription')}
                 onClick={() => pickMode('manual')}
               />
+              {libraryClubId && (
+                <ModeCard
+                  emoji="📚"
+                  title={t('modeLibraryTitle')}
+                  description={t('modeLibraryDescription')}
+                  onClick={() => pickMode('library')}
+                />
+              )}
             </div>
           )}
 
@@ -681,6 +732,14 @@ export function RoutePlannerShell({
           </div>
         )}
       </div>
+
+      {libraryOpen && libraryClubId && (
+        <LibraryPickerDialog
+          clubId={libraryClubId}
+          onPick={handleLibraryPick}
+          onClose={handleLibraryClose}
+        />
+      )}
 
     </div>
   );

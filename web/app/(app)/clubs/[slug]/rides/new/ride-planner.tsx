@@ -71,6 +71,7 @@ export function RidePlanner({
   return (
     <RoutePlannerShell
       clubStart={clubStart}
+      libraryClubId={clubId}
       modeBackLink={
         <Link
           href={`/clubs/${slug}`}

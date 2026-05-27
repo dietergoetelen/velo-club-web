@@ -200,6 +200,16 @@
     "reactions": {
       "toggleAria": "Reageer met {emoji}"
     },
+    "library": {
+      "title": "Kies een route uit de bibliotheek",
+      "close": "Sluiten",
+      "loading": "Routes laden…",
+      "failed": "Kon de bibliotheek niet laden.",
+      "empty": "Nog geen routes om te kiezen.",
+      "sectionClub": "Van clubleden · {count}",
+      "sectionOthers": "Andere routes · {count}",
+      "truncatedHint": "Toon eerste 30 — gebruik zoeken in een volgende versie als de lijst groeit."
+    },
     "detail": {
       "dateTimeLabel": "Datum & tijd",
       "startingAt": "Vertrek om {time}",
@@ -230,6 +240,8 @@
       "modeLoopDescription": "Kies een afstand, krijg 3 voorstellen.",
       "modeManualTitle": "Maak zelf",
       "modeManualDescription": "Klik je eigen route op de kaart.",
+      "modeLibraryTitle": "Uit bibliotheek",
+      "modeLibraryDescription": "Kies een bestaande route en plan ze voor je club.",
       "backToModes": "Andere planmethode",
       "startDrawing": "✎ Begin met tekenen",
       "subtitleNoStart": "Klik op de kaart om je startpunt te kiezen.",
