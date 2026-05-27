@@ -14,6 +14,9 @@ primary_region = 'ams'
   POCKETBASE_PUBLIC_URL = 'https://paceline-pb.fly.dev'
   POCKETBASE_ADMIN_EMAIL = 'dieter.goetelen@hotmail.com'
   POCKETBASE_ADMIN_PASSWORD = 'K6H3:AV_MW+7?&sc0Kjx'
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY=BBPpxaQiOHbUAqoD9C7Fxhp2e9l9B8JRaRiCFiMJ-gjjWIqae0A2jiWWRc_BG8cx_0K4SCRAr6qjs6hwHjfjaFI
+  VAPID_PRIVATE_KEY=JmGbgefQ6Ec8TAkNFhPf-Wgnq8RMmGLHtUMTxGO55Ds
+  VAPID_SUBJECT=mailto:admin@zoesh.app
 
 [http_service]
   internal_port = 3000
