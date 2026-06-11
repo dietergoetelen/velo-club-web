@@ -155,7 +155,7 @@
     "tabRoutes": "Routes",
     "routesEmptyTitle": "Nog geen routes van clubleden.",
     "routesEmptyHint": "Maak een route in de routeplanner en hij verschijnt hier.",
-    "leaderboardHeading": "Klassement {year}",
+    "tabLeaderboard": "Klassement",
     "leaderboardEmptyTitle": "Nog geen kilometers verzameld.",
     "leaderboardEmptyHint": "Bevestig na een rit dat je meereed — je kilometers verschijnen hier.",
     "leaderboardYou": "(jij)",

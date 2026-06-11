@@ -45,6 +45,16 @@ export function currentYearBrussels(): number {
   return parseInt(todayInBrussels().slice(0, 4), 10);
 }
 
+const YEAR_FORMAT = new Intl.DateTimeFormat('en', {
+  timeZone: APP_TIMEZONE,
+  year:     'numeric',
+});
+
+/** Calendar year of the given timestamp, in Brussels. */
+export function yearInBrussels(date: string | Date): number {
+  return parseInt(YEAR_FORMAT.format(new Date(date)), 10);
+}
+
 /**
  * UTC ISO timestamp for Brussels midnight on January 1st of the current
  * year. Season boundary for the kilometre totals.

@@ -1,5 +1,6 @@
 import 'server-only';
 import type PocketBase from 'pocketbase';
+import { yearInBrussels } from './dates';
 import type { Attendance, Route } from './types';
 
 /**
@@ -47,40 +48,51 @@ async function attendancesForRides(pb: PocketBase, rideIds: string[]): Promise<A
   return out;
 }
 
+export interface YearTotals {
+  year:   number;
+  totals: RiderTotals[];
+}
+
 /**
- * Per-member totals for one club's rides between `since` (inclusive,
- * optional) and `until` (exclusive — pass the start-of-today cutoff so a
- * ride only counts once it's past). Sorted by km, then ride count.
+ * Per-member totals for one club, grouped by (Brussels) calendar year, all
+ * from a single rides + attendances fetch. `until` is exclusive — pass the
+ * start-of-today cutoff so a ride only counts once it's past. Years sorted
+ * newest first; totals sorted by km, then ride count.
  */
-export async function clubRiderTotals(
+export async function clubRiderTotalsByYear(
   pb: PocketBase,
   clubId: string,
-  { since, until }: { since?: string; until: string },
-): Promise<RiderTotals[]> {
-  const filter =
-    `club = "${clubId}" && status != "cancelled" && date < "${until}"`
-    + (since ? ` && date >= "${since}"` : '');
-
+  until: string,
+): Promise<YearTotals[]> {
   const rides = await pb.collection('routes').getFullList<RideSlim>({
-    filter,
+    filter:     `club = "${clubId}" && status != "cancelled" && date < "${until}"`,
     fields:     RIDE_FIELDS,
     requestKey: null,
   }).catch(() => [] as RideSlim[]);
   if (rides.length === 0) return [];
 
-  const kmByRide    = new Map(rides.map(r => [r.id, r.distance_km]));
-  const attendances = await attendancesForRides(pb, [...kmByRide.keys()]);
+  const rideById    = new Map(rides.map(r => [r.id, r]));
+  const attendances = await attendancesForRides(pb, [...rideById.keys()]);
 
-  const byUser = new Map<string, RiderTotals>();
+  const byYear = new Map<number, Map<string, RiderTotals>>();
   for (const a of attendances) {
-    const km = kmByRide.get(a.route);
-    if (km === undefined) continue;
+    const ride = rideById.get(a.route);
+    if (!ride) continue;
+    const year   = yearInBrussels(ride.date);
+    const byUser = byYear.get(year) ?? new Map<string, RiderTotals>();
     const totals = byUser.get(a.user) ?? { user: a.user, rides: 0, km: 0 };
     totals.rides += 1;
-    totals.km    += km;
+    totals.km    += ride.distance_km;
     byUser.set(a.user, totals);
+    byYear.set(year, byUser);
   }
-  return [...byUser.values()].sort((a, b) => b.km - a.km || b.rides - a.rides);
+
+  return [...byYear.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .map(([year, byUser]) => ({
+      year,
+      totals: [...byUser.values()].sort((a, b) => b.km - a.km || b.rides - a.rides),
+    }));
 }
 
 /**

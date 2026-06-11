@@ -9,8 +9,9 @@ import { type StackedUser } from '@/components/avatar-stack';
 import { ClubIntro } from '@/components/club-intro';
 import { ClubTabs } from '@/components/club-tabs';
 import { RideCard } from '@/components/ride-card';
-import { startOfTodayIso, startOfYearIso, currentYearBrussels } from '@/lib/dates';
-import { clubRiderTotals } from '@/lib/stats';
+import { startOfTodayIso } from '@/lib/dates';
+import { clubRiderTotalsByYear } from '@/lib/stats';
+import { ClubLeaderboard } from '@/components/club-leaderboard';
 import { compareSchedules } from '@/lib/schedules';
 import { PersonalRouteCard } from '@/components/personal-route-card';
 import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, PersonalRoute, ReactionEmoji, RideReaction, Route } from '@/lib/types';
@@ -79,7 +80,7 @@ export default async function ClubPage({
   // `requestKey: null` opts out of the PB JS SDK's auto-cancellation —
   // without it the two parallel routes queries cancel each other.
   const cutoff = startOfTodayIso();
-  const [rides, pastList, leaderboard, clubRoutes] = await Promise.all([
+  const [rides, pastList, leaderboardYears, clubRoutes] = await Promise.all([
     pb.collection('routes').getFullList<Route>({
       filter:     `club = "${club.id}" && status != "cancelled" && date >= "${cutoff}"`,
       sort:       'date',
@@ -89,7 +90,7 @@ export default async function ClubPage({
       filter:     `club = "${club.id}" && status != "cancelled" && date < "${cutoff}"`,
       requestKey: null,
     }).catch(() => null),
-    clubRiderTotals(pb, club.id, { since: startOfYearIso(), until: cutoff }),
+    clubRiderTotalsByYear(pb, club.id, cutoff),
     // Members' personal routes, alphabetical. user is a plain text id, so
     // OR-chain over the member list (clubs are small).
     members.length > 0
@@ -125,7 +126,7 @@ export default async function ClubPage({
     ...members.map(m => m.user),
     ...pendingRequests.map(r => r.user),
     ...attendances.map(a => a.user),
-    ...leaderboard.map(r => r.user),
+    ...leaderboardYears.flatMap(y => y.totals.map(t => t.user)),
   ])];
   const usersById: Record<string, { name: string; username: string; email: string; avatar: string }> = {};
   await Promise.all(
@@ -365,78 +366,29 @@ export default async function ClubPage({
           },
           {
             id:    'leaderboard',
-            label: tDetail('leaderboardHeading', { year: currentYearBrussels() }),
-            content: leaderboard.length === 0 ? (
+            label: tDetail('tabLeaderboard'),
+            content: leaderboardYears.length === 0 ? (
               <div className="card p-10 text-center">
                 <p className="font-heading font-bold text-lg text-ink">{tDetail('leaderboardEmptyTitle')}</p>
                 <p className="text-ink-soft text-sm mt-1.5">{tDetail('leaderboardEmptyHint')}</p>
               </div>
             ) : (
-          <div className="card overflow-hidden">
-            {leaderboard.map((row, i) => {
-              const u           = usersById[row.user];
-              const displayName = u?.name || u?.username || u?.email || tMembers('fallbackName');
-              const isMe        = row.user === user.id;
-              // Podium gets the club palette; the rest a plain rank number.
-              const podium      = (['var(--amber)', 'var(--pink)', 'var(--mint)'] as const)[i];
-
-              return (
-                <div
-                  key={row.user}
-                  className="flex items-center gap-4 px-6 py-4"
-                  style={i !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
-                >
-                  <span
-                    className="w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 tabular-nums"
-                    style={podium ? {
-                      backgroundColor: podium,
-                      border:    '2px solid var(--ink)',
-                      boxShadow: '2px 2px 0px var(--ink)',
-                      color:     'var(--ink)',
-                    } : { color: 'var(--ink-soft)' }}
-                  >
-                    {i + 1}
-                  </span>
-
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black overflow-hidden shrink-0"
-                    style={{
-                      backgroundColor: u?.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
-                      border:    '2px solid var(--ink)',
-                      boxShadow: '2px 2px 0px var(--ink)',
-                      color:     'var(--ink)',
-                    }}
-                  >
-                    {u?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={fileUrl('users', row.user, u.avatar, '100x100')}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      getInitials(displayName)
-                    )}
-                  </div>
-
-                  <p className="font-bold text-ink flex-1 min-w-0 truncate">
-                    {displayName}
-                    {isMe && <span className="text-ink-soft font-medium"> {tDetail('leaderboardYou')}</span>}
-                  </p>
-
-                  <div className="text-right shrink-0">
-                    <p className="font-heading font-black text-ink text-lg leading-tight tabular-nums">
-                      {Math.round(row.km).toLocaleString('nl-BE')}
-                      <span className="font-bold text-xs text-ink-soft ml-1">km</span>
-                    </p>
-                    <p className="text-xs text-ink-soft tabular-nums">
-                      {tDetail('leaderboardRides', { count: row.rides })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+              <ClubLeaderboard
+                currentUserId={user.id}
+                years={leaderboardYears.map(({ year, totals }) => ({
+                  year,
+                  rows: totals.map(row => {
+                    const u = usersById[row.user];
+                    return {
+                      user:      row.user,
+                      name:      u?.name || u?.username || u?.email || tMembers('fallbackName'),
+                      avatarUrl: u?.avatar ? fileUrl('users', row.user, u.avatar, '100x100') : '',
+                      rides:     row.rides,
+                      km:        row.km,
+                    };
+                  }),
+                }))}
+              />
             ),
           },
           {
