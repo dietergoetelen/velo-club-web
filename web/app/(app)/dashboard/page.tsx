@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getMemberships, getAuthenticatedPB } from '@/lib/session';
+import { fileUrl } from '@/lib/pocketbase';
 import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
 import { PersonalRouteCard } from '@/components/personal-route-card';
@@ -17,6 +18,14 @@ function greetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEveni
 
 /* Cycles through our four palette colors for club accent dots */
 const ACCENT_COLORS = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
+
+function getInitials(nameOrEmail: string) {
+  return (nameOrEmail || '?')
+    .split(/[\s@.]+/)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -246,27 +255,53 @@ export default async function DashboardPage() {
           <div className="card overflow-hidden">
             {otherClubs.map((club, index) => {
               const isPending = pendingClubIds.has(club.id);
+              const accent    = ACCENT_COLORS[index % ACCENT_COLORS.length];
               return (
+                // Stacks on mobile so long club names never fight the join
+                // button for one row; side by side again from sm up.
                 <div
                   key={club.id}
-                  className="flex items-center justify-between gap-4"
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 sm:py-5"
                   style={index !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
                 >
                   <Link
                     href={`/clubs/${club.slug}`}
-                    className="min-w-0 flex-1 px-6 py-5 group"
+                    className="flex items-center gap-3.5 min-w-0 flex-1 group"
+                    style={{ textDecoration: 'none' }}
                   >
-                    <p className="font-heading font-bold text-ink truncate group-hover:text-accent transition-colors duration-200">
-                      {club.name}
-                    </p>
-                    {club.description && (
-                      <p className="text-sm text-ink-soft mt-0.5 truncate">{markdownToPreview(club.description)}</p>
-                    )}
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center font-black text-sm overflow-hidden shrink-0"
+                      style={{
+                        backgroundColor: club.avatar ? '#ffffff' : accent,
+                        border:    '2px solid var(--ink)',
+                        boxShadow: '2px 2px 0px var(--ink)',
+                        color:     'var(--ink)',
+                      }}
+                    >
+                      {club.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={fileUrl('clubs', club.id, club.avatar, '100x100')}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getInitials(club.name)
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-heading font-bold text-ink truncate group-hover:text-accent transition-colors duration-200">
+                        {club.name}
+                      </p>
+                      {club.description && (
+                        <p className="text-sm text-ink-soft mt-0.5 truncate">{markdownToPreview(club.description)}</p>
+                      )}
+                    </div>
                   </Link>
-                  <div className="pr-6 shrink-0">
+                  <div className="shrink-0 self-start sm:self-auto">
                     {isPending
                       ? <span className="badge-neutral">{t('pendingBadge')}</span>
-                      : <JoinRequestForm clubId={club.id} slug={club.slug} />
+                      : <JoinRequestForm clubId={club.id} slug={club.slug} small />
                     }
                   </div>
                 </div>
