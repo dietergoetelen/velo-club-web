@@ -12,9 +12,13 @@ const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
 export function PersonalRouteCard({
   route,
   index,
+  ownerName,
 }: {
-  route: PersonalRoute;
-  index: number;
+  route:      PersonalRoute;
+  index:      number;
+  /** Byline for shared contexts (e.g. the club routes tab); omitted on the
+      owner's own dashboard. */
+  ownerName?: string;
 }) {
   const accent = PALETTE[index % PALETTE.length];
 
@@ -28,6 +32,9 @@ export function PersonalRouteCard({
         <h3 className="font-heading font-black text-ink text-lg leading-tight group-hover:text-accent transition-colors truncate">
           {route.name}
         </h3>
+        {ownerName && (
+          <p className="text-xs text-ink-soft font-medium mt-0.5 truncate">door {ownerName}</p>
+        )}
 
         <dl className="flex flex-wrap gap-x-6 gap-y-2 mt-3">
           <Stat label="AFSTAND" value={`${route.distance_km}`} unit="km" />

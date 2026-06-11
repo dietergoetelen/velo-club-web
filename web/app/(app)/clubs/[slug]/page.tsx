@@ -12,7 +12,8 @@ import { RideCard } from '@/components/ride-card';
 import { startOfTodayIso, startOfYearIso, currentYearBrussels } from '@/lib/dates';
 import { clubRiderTotals } from '@/lib/stats';
 import { compareSchedules } from '@/lib/schedules';
-import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, ReactionEmoji, RideReaction, Route } from '@/lib/types';
+import { PersonalRouteCard } from '@/components/personal-route-card';
+import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, PersonalRoute, ReactionEmoji, RideReaction, Route } from '@/lib/types';
 import { REACTION_EMOJIS } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
@@ -78,7 +79,7 @@ export default async function ClubPage({
   // `requestKey: null` opts out of the PB JS SDK's auto-cancellation —
   // without it the two parallel routes queries cancel each other.
   const cutoff = startOfTodayIso();
-  const [rides, pastList, leaderboard] = await Promise.all([
+  const [rides, pastList, leaderboard, clubRoutes] = await Promise.all([
     pb.collection('routes').getFullList<Route>({
       filter:     `club = "${club.id}" && status != "cancelled" && date >= "${cutoff}"`,
       sort:       'date',
@@ -89,6 +90,16 @@ export default async function ClubPage({
       requestKey: null,
     }).catch(() => null),
     clubRiderTotals(pb, club.id, { since: startOfYearIso(), until: cutoff }),
+    // Members' personal routes, alphabetical. user is a plain text id, so
+    // OR-chain over the member list (clubs are small).
+    members.length > 0
+      ? pb.collection('personal_routes').getFullList<PersonalRoute>({
+          filter:     members.map(m => `user = "${m.user}"`).join(' || '),
+          requestKey: null,
+        }).then(routes =>
+          routes.sort((a, b) => a.name.localeCompare(b.name, 'nl-BE', { sensitivity: 'base' })),
+        ).catch(() => [] as PersonalRoute[])
+      : Promise.resolve([] as PersonalRoute[]),
   ]);
   const pastCount = pastList?.totalItems ?? 0;
 
@@ -302,7 +313,7 @@ export default async function ClubPage({
         tabs={[
           {
             id:      'rides',
-            label:   tDetail('upcomingRides'),
+            label:   tDetail('tabRides'),
             count:   rides.length,
             content: <>
         {rides.length === 0 ? (
@@ -505,6 +516,31 @@ export default async function ClubPage({
             })}
           </ul>
         </div>
+            ),
+          },
+          {
+            id:      'routes',
+            label:   tDetail('tabRoutes'),
+            count:   clubRoutes.length,
+            content: clubRoutes.length === 0 ? (
+              <div className="card p-10 text-center">
+                <p className="font-heading font-bold text-lg text-ink">{tDetail('routesEmptyTitle')}</p>
+                <p className="text-ink-soft text-sm mt-1.5">{tDetail('routesEmptyHint')}</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {clubRoutes.map((route, i) => {
+                  const owner = usersById[route.user];
+                  return (
+                    <PersonalRouteCard
+                      key={route.id}
+                      route={route}
+                      index={i}
+                      ownerName={owner?.name || owner?.username || owner?.email}
+                    />
+                  );
+                })}
+              </div>
             ),
           },
         ]}
