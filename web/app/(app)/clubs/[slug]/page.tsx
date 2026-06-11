@@ -7,8 +7,10 @@ import { approveJoinRequest, rejectJoinRequest, promoteToCaptain } from '@/lib/a
 import { JoinRequestForm } from './join-request-form';
 import { type StackedUser } from '@/components/avatar-stack';
 import { ClubIntro } from '@/components/club-intro';
+import { ClubTabs } from '@/components/club-tabs';
 import { RideCard } from '@/components/ride-card';
-import { startOfTodayIso } from '@/lib/dates';
+import { startOfTodayIso, startOfYearIso, currentYearBrussels } from '@/lib/dates';
+import { clubRiderTotals } from '@/lib/stats';
 import { compareSchedules } from '@/lib/schedules';
 import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, ReactionEmoji, RideReaction, Route } from '@/lib/types';
 import { REACTION_EMOJIS } from '@/lib/types';
@@ -76,7 +78,7 @@ export default async function ClubPage({
   // `requestKey: null` opts out of the PB JS SDK's auto-cancellation —
   // without it the two parallel routes queries cancel each other.
   const cutoff = startOfTodayIso();
-  const [rides, pastList] = await Promise.all([
+  const [rides, pastList, leaderboard] = await Promise.all([
     pb.collection('routes').getFullList<Route>({
       filter:     `club = "${club.id}" && status != "cancelled" && date >= "${cutoff}"`,
       sort:       'date',
@@ -86,6 +88,7 @@ export default async function ClubPage({
       filter:     `club = "${club.id}" && status != "cancelled" && date < "${cutoff}"`,
       requestKey: null,
     }).catch(() => null),
+    clubRiderTotals(pb, club.id, { since: startOfYearIso(), until: cutoff }),
   ]);
   const pastCount = pastList?.totalItems ?? 0;
 
@@ -111,6 +114,7 @@ export default async function ClubPage({
     ...members.map(m => m.user),
     ...pendingRequests.map(r => r.user),
     ...attendances.map(a => a.user),
+    ...leaderboard.map(r => r.user),
   ])];
   const usersById: Record<string, { name: string; username: string; email: string; avatar: string }> = {};
   await Promise.all(
@@ -288,32 +292,19 @@ export default async function ClubPage({
         </section>
       )}
 
-      {/* ── Upcoming rides ─────────────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <p className="eyebrow">{tDetail('upcomingRides')}</p>
-            {rides.length > 0 && (
-              <span
-                className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center"
-                style={{
-                  backgroundColor: 'var(--amber)',
-                  border:    '2px solid var(--ink)',
-                  boxShadow: '2px 2px 0px var(--ink)',
-                  color:     'var(--ink)',
-                }}
-              >
-                {rides.length}
-              </span>
-            )}
-          </div>
-          {isCaptain && (
-            <Link href={`/clubs/${slug}/rides/new`} className="btn-primary text-sm">
-              {tDetail('planRide')}
-            </Link>
-          )}
-        </div>
-
+      {/* ── Tabs: ritten / klassement / leden ──────────────────────────── */}
+      <ClubTabs
+        action={isCaptain ? (
+          <Link href={`/clubs/${slug}/rides/new`} className="btn-primary text-sm">
+            {tDetail('planRide')}
+          </Link>
+        ) : undefined}
+        tabs={[
+          {
+            id:      'rides',
+            label:   tDetail('upcomingRides'),
+            count:   rides.length,
+            content: <>
         {rides.length === 0 ? (
           <div className="card p-10 text-center">
             <div className="flex justify-center mb-5" aria-hidden="true">
@@ -359,19 +350,89 @@ export default async function ClubPage({
             </Link>
           </div>
         )}
-      </section>
+            </>,
+          },
+          {
+            id:    'leaderboard',
+            label: tDetail('leaderboardHeading', { year: currentYearBrussels() }),
+            content: leaderboard.length === 0 ? (
+              <div className="card p-10 text-center">
+                <p className="font-heading font-bold text-lg text-ink">{tDetail('leaderboardEmptyTitle')}</p>
+                <p className="text-ink-soft text-sm mt-1.5">{tDetail('leaderboardEmptyHint')}</p>
+              </div>
+            ) : (
+          <div className="card overflow-hidden">
+            {leaderboard.map((row, i) => {
+              const u           = usersById[row.user];
+              const displayName = u?.name || u?.username || u?.email || tMembers('fallbackName');
+              const isMe        = row.user === user.id;
+              // Podium gets the club palette; the rest a plain rank number.
+              const podium      = (['var(--amber)', 'var(--pink)', 'var(--mint)'] as const)[i];
 
-      {/* ── Members ────────────────────────────────────────────────────── */}
-      <section>
-        <div className="flex items-center gap-3 mb-4">
-          <p className="eyebrow">{tMembers('heading')}</p>
-          <span
-            className="w-6 h-6 rounded-full text-xs font-black flex items-center justify-center"
-            style={{ backgroundColor: 'var(--mint)', border: '2px solid var(--ink)', boxShadow: '2px 2px 0px var(--ink)', color: 'var(--ink)' }}
-          >
-            {members.length}
-          </span>
-        </div>
+              return (
+                <div
+                  key={row.user}
+                  className="flex items-center gap-4 px-6 py-4"
+                  style={i !== 0 ? { borderTop: '2px solid var(--line)' } : undefined}
+                >
+                  <span
+                    className="w-7 h-7 rounded-full text-xs font-black flex items-center justify-center shrink-0 tabular-nums"
+                    style={podium ? {
+                      backgroundColor: podium,
+                      border:    '2px solid var(--ink)',
+                      boxShadow: '2px 2px 0px var(--ink)',
+                      color:     'var(--ink)',
+                    } : { color: 'var(--ink-soft)' }}
+                  >
+                    {i + 1}
+                  </span>
+
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-black overflow-hidden shrink-0"
+                    style={{
+                      backgroundColor: u?.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
+                      border:    '2px solid var(--ink)',
+                      boxShadow: '2px 2px 0px var(--ink)',
+                      color:     'var(--ink)',
+                    }}
+                  >
+                    {u?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={fileUrl('users', row.user, u.avatar, '100x100')}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      getInitials(displayName)
+                    )}
+                  </div>
+
+                  <p className="font-bold text-ink flex-1 min-w-0 truncate">
+                    {displayName}
+                    {isMe && <span className="text-ink-soft font-medium"> {tDetail('leaderboardYou')}</span>}
+                  </p>
+
+                  <div className="text-right shrink-0">
+                    <p className="font-heading font-black text-ink text-lg leading-tight tabular-nums">
+                      {Math.round(row.km).toLocaleString('nl-BE')}
+                      <span className="font-bold text-xs text-ink-soft ml-1">km</span>
+                    </p>
+                    <p className="text-xs text-ink-soft tabular-nums">
+                      {tDetail('leaderboardRides', { count: row.rides })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+            ),
+          },
+          {
+            id:      'members',
+            label:   tMembers('heading'),
+            count:   members.length,
+            content: (
         <div className="card p-6">
           <ul className="flex flex-wrap gap-5">
             {members.map((m, i) => {
@@ -444,7 +505,10 @@ export default async function ClubPage({
             })}
           </ul>
         </div>
-      </section>
+            ),
+          },
+        ]}
+      />
 
     </div>
   );

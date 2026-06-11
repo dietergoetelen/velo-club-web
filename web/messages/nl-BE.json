@@ -106,7 +106,11 @@
     "photoLabel": "Profielfoto",
     "submit": "Wijzigingen opslaan →",
     "submitLoading": "Opslaan…",
-    "notificationsHeading": "Meldingen"
+    "notificationsHeading": "Meldingen",
+    "statsHeading": "Jouw kilometers",
+    "statsThisYear": "{year}",
+    "statsAllTime": "Totaal",
+    "statsRides": "{count, plural, =1 {1 rit} other {# ritten}}"
   },
   "clubs": {
     "list": {
@@ -147,6 +151,11 @@
       "noRidesHint": "Klik op <link>+ Plan een rit</link> om er een op de kalender te zetten!",
       "viewPastRides": "Bekijk {count, plural, =1 {1 voorbije rit} other {# voorbije ritten}} →",
       "pastRidesTitle": "Voorbije ritten",
+    "leaderboardHeading": "Klassement {year}",
+    "leaderboardEmptyTitle": "Nog geen kilometers verzameld.",
+    "leaderboardEmptyHint": "Bevestig na een rit dat je meereed — je kilometers verschijnen hier.",
+    "leaderboardYou": "(jij)",
+    "leaderboardRides": "{count, plural, =1 {1 rit} other {# ritten}}",
       "pastRidesEmpty": "Nog geen voorbije ritten.",
       "backToClub": "← Terug naar club"
     },
@@ -239,6 +248,11 @@
       "noOneYet": "Nog niemand — wees de eerste.",
       "imIn": "✓ Ik kom mee — klik om te annuleren",
       "imJoining": "Ik kom mee",
+      "rode": "Reden mee",
+      "noOneYetPast": "Nog niemand bevestigd.",
+      "iRode": "Ik reed mee",
+      "iRodeConfirmed": "✓ Je reed mee — klik om te annuleren",
+      "rodeHint": "Reed je mee? Bevestig het en verzamel je kilometers.",
       "downloadGpx": "⬇ Download GPX",
       "gpxHint": "Importeer in Garmin Connect als koers.",
       "editRoute": "✎ Bewerk route",

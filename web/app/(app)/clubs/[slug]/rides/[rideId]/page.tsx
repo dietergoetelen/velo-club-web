@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
 import { toggleAttendance } from '@/lib/actions/attendance';
+import { startOfTodayIso } from '@/lib/dates';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import type { Attendance, Club, ClubMember, Route } from '@/lib/types';
 import { RouteDetailLayout } from '@/components/route-detail-layout';
@@ -75,6 +76,10 @@ export default async function RideDetailPage({
 
   const isAttending = attendances.some(a => a.user === user.id);
 
+  // Past rides switch to past-tense copy: the same attendance toggle then
+  // acts as the "I rode along" confirmation that feeds the km totals.
+  const isPast = new Date(ride.date).getTime() < new Date(startOfTodayIso()).getTime();
+
   return (
     <RouteDetailLayout
       coordinates={ride.coordinates}
@@ -133,7 +138,7 @@ export default async function RideDetailPage({
           {/* Attendance */}
           <div>
             <div className="flex items-baseline justify-between mb-3">
-              <p className="field-label mb-0">{t('going')}</p>
+              <p className="field-label mb-0">{isPast ? t('rode') : t('going')}</p>
               <span className="text-xs font-black text-ink-soft tabular-nums">
                 {attendees.length}
               </span>
@@ -141,7 +146,7 @@ export default async function RideDetailPage({
             {attendees.length > 0 ? (
               <AvatarStack users={attendees} size={36} visible={3} />
             ) : (
-              <p className="text-ink-soft text-sm">{t('noOneYet')}</p>
+              <p className="text-ink-soft text-sm">{isPast ? t('noOneYetPast') : t('noOneYet')}</p>
             )}
             {isMember && (
               <form action={toggleAttendance} className="mt-4">
@@ -151,8 +156,13 @@ export default async function RideDetailPage({
                   type="submit"
                   className={isAttending ? 'btn-secondary w-full' : 'btn-primary w-full'}
                 >
-                  {isAttending ? t('imIn') : t('imJoining')}
+                  {isPast
+                    ? (isAttending ? t('iRodeConfirmed') : t('iRode'))
+                    : (isAttending ? t('imIn') : t('imJoining'))}
                 </button>
+                {isPast && !isAttending && (
+                  <p className="text-xs text-ink-soft mt-1.5">{t('rodeHint')}</p>
+                )}
               </form>
             )}
           </div>
