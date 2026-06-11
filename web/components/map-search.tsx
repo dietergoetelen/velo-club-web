@@ -108,7 +108,10 @@ export function MapSearch() {
   return (
     <div
       ref={containerRef}
-      className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] w-[min(360px,calc(100%-1rem))]"
+      // Mobile: pinned between the map controls — 56px clears the zoom
+      // buttons (top-left), 112px clears the layers control incl. its
+      // expanded state (top-right). md+: centered 360px as before.
+      className="absolute top-3 z-[1000] left-14 right-28 md:left-1/2 md:right-auto md:w-[360px] md:-translate-x-1/2"
     >
       <div
         className="flex items-center gap-2 px-3 h-11 rounded-xl bg-white"
