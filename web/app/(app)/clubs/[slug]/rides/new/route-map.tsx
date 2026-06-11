@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import {
   MapContainer,
-  TileLayer,
   Polyline,
   CircleMarker,
   Marker,
@@ -15,6 +14,7 @@ import 'leaflet/dist/leaflet.css';
 import type { RideRoute } from '@/lib/types';
 import DirectionArrows from '@/lib/direction-arrows';
 import { MapSearch } from '@/components/map-search';
+import MapLayers from '@/components/map-layers';
 
 type StartPos = { lat: number; lng: number };
 type Waypoint = { id: string; lat: number; lng: number };
@@ -166,12 +166,7 @@ export default function RouteMap({
       style={{ height: '100%', width: '100%' }}
       zoomControl
     >
-      {/* Carto Positron — clean, minimal, routes pop nicely */}
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        maxZoom={19}
-      />
+      <MapLayers cycleRoutes={editing} />
 
       <ClickHandler
         editing={editing}

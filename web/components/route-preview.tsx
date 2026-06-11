@@ -58,7 +58,7 @@ function tileUrl(z: number, x: number, y: number): string {
   // Carto serves on subdomains a–d; pick deterministically to help browser caching.
   // @2x suffix = 512px retina tile, so the browser downscales instead of upscaling.
   const sub = 'abcd'[(x + y) % 4];
-  return `https://${sub}.basemaps.cartocdn.com/light_all/${z}/${x}/${y}@2x.png`;
+  return `https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${z}/${x}/${y}@2x.png`;
 }
 
 export function RoutePreview({
