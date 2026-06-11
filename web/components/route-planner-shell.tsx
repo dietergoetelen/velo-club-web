@@ -10,13 +10,14 @@ import {
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { generateRoutes } from '@/lib/actions/rides';
+import { parseGpx } from '@/lib/gpx-import';
 import { RouteEditPanel, type RouteEditState } from '@/components/route-edit-panel';
 import { LibraryPickerDialog } from '@/components/library-picker-dialog';
 import type { LibraryEntry } from '@/lib/actions/route-library';
 import type { RideRoute } from '@/lib/types';
 
 type StartPos = { lat: number; lng: number };
-type Mode     = 'loop' | 'manual' | 'library';
+type Mode     = 'loop' | 'manual' | 'library' | 'gpx';
 type Step     = 'mode' | 'setup' | 'generating' | 'picking' | 'editing';
 
 function MapLoading() {
@@ -296,6 +297,40 @@ export function RoutePlannerShell({
     if (mode === 'library') setMode(null);
   };
 
+  // ── GPX import ─────────────────────────────────────────────────────────
+  // Like library mode, GPX is transient: the mode card opens a file picker,
+  // and a successfully parsed file drops straight into the editor. The mode
+  // is only set on success, so cancelling the file dialog needs no cleanup.
+  const gpxInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGpxFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';  // allow re-picking the same file after an error
+    if (!file) return;
+
+    const parsed = parseGpx(await file.text());
+    if (!parsed) {
+      setGenError(t('gpxInvalid'));
+      return;
+    }
+
+    setGenError(null);
+    setMode('gpx');
+    setRoutes([]);
+    setSelectedRoute({
+      id:          `gpx-${Date.now()}`,
+      label:       parsed.name || file.name.replace(/\.gpx$/i, ''),
+      color:       '#FBBF24',
+      distance:    parsed.distanceKm,
+      elevation:   parsed.elevationM,
+      coordinates: parsed.coordinates,
+      score:       100,
+      lollipopM:   0,
+    });
+    setStartPos(null);
+    setStep('editing');
+  };
+
   const acceptStart = (pos: StartPos | null) => setStartPos(pos);
 
   const backToModePicker = () => {
@@ -484,6 +519,12 @@ export function RoutePlannerShell({
                 description={t('modeManualDescription')}
                 onClick={() => pickMode('manual')}
               />
+              <ModeCard
+                emoji="📥"
+                title={t('modeGpxTitle')}
+                description={t('modeGpxDescription')}
+                onClick={() => gpxInputRef.current?.click()}
+              />
               {libraryClubId && (
                 <ModeCard
                   emoji="📚"
@@ -492,6 +533,14 @@ export function RoutePlannerShell({
                   onClick={() => pickMode('library')}
                 />
               )}
+              <input
+                ref={gpxInputRef}
+                type="file"
+                accept=".gpx,application/gpx+xml"
+                className="hidden"
+                onChange={handleGpxFile}
+              />
+              {genError && <p className="field-error">{genError}</p>}
             </div>
           )}
 
