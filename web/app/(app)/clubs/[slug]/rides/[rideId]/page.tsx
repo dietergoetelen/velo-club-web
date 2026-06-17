@@ -2,12 +2,24 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { getCurrentUser, getAuthenticatedPB } from '@/lib/session';
+import { fileUrl } from '@/lib/pocketbase';
 import { toggleAttendance } from '@/lib/actions/attendance';
 import { startOfTodayIso } from '@/lib/dates';
 import { AvatarStack, type StackedUser } from '@/components/avatar-stack';
 import type { Attendance, Club, ClubMember, Route } from '@/lib/types';
 import { RouteDetailLayout } from '@/components/route-detail-layout';
 import { DeleteRideButton } from './delete-ride-button';
+import { RemoveAttendeeButton } from './remove-attendee-button';
+
+const AVATAR_COLORS = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
+
+function getInitials(nameOrEmail: string) {
+  return (nameOrEmail || '?')
+    .split(/[\s@.]+/)
+    .slice(0, 2)
+    .map(s => s[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('nl-BE', {
@@ -164,6 +176,38 @@ export default async function RideDetailPage({
                   <p className="text-xs text-ink-soft mt-1.5">{t('rodeHint')}</p>
                 )}
               </form>
+            )}
+
+            {/* Captain-only post-ride review: correct who was actually there.
+                Only after the ride, since these rows feed the km leaderboard. */}
+            {isCaptain && isPast && attendees.length > 0 && (
+              <div className="mt-5 pt-5" style={{ borderTop: '2px solid var(--line)' }}>
+                <p className="field-label mb-3">{t('reviewLabel')}</p>
+                <ul className="space-y-2">
+                  {attendees.map((a, i) => (
+                    <li key={a.id} className="flex items-center gap-3">
+                      <span
+                        className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden font-black text-ink text-xs shrink-0"
+                        style={{
+                          backgroundColor: a.avatar ? '#fff' : AVATAR_COLORS[i % AVATAR_COLORS.length],
+                          border:    '2px solid var(--ink)',
+                          boxShadow: '2px 2px 0px rgba(0,0,0,0.18)',
+                        }}
+                      >
+                        {a.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={fileUrl('users', a.id, a.avatar, '100x100')} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          getInitials(a.name)
+                        )}
+                      </span>
+                      <span className="flex-1 min-w-0 truncate font-bold text-ink text-sm">{a.name}</span>
+                      <RemoveAttendeeButton rideId={ride.id} slug={slug} userId={a.id} name={a.name} />
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-ink-soft mt-3">{t('reviewHint')}</p>
+              </div>
             )}
           </div>
 

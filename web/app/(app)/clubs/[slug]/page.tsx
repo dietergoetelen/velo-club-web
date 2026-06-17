@@ -184,7 +184,10 @@ export default async function ClubPage({
     <div className="space-y-10">
 
       {/* ── Club header ────────────────────────────────────────────────── */}
-      <div className="relative">
+      {/* min-height reserves space for the floating avatar (absolute, h-40,
+          hidden on mobile) so a short header — e.g. a club with no
+          description — doesn't let it overlap the tabs + "Plan een rit". */}
+      <div className="relative sm:min-h-40">
         <div
           className="absolute -top-4 right-0 w-40 h-40 rounded-full hidden sm:flex items-center justify-center overflow-hidden font-heading font-black text-5xl text-ink"
           style={{
