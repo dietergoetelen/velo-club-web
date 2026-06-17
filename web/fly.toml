@@ -21,6 +21,8 @@ primary_region = 'ams'
   POCKETBASE_ADMIN_PASSWORD = 'K6H3:AV_MW+7?&sc0Kjx'
   VAPID_PRIVATE_KEY= 'JmGbgefQ6Ec8TAkNFhPf-Wgnq8RMmGLHtUMTxGO55Ds'
   VAPID_SUBJECT= 'mailto:admin@zoesh.app'
+  # Shared secret guarding /api/cron/ride-reminders — must match paceline-pb.
+  CRON_SECRET = 'a5df989477cee74f268a0ac43eb2a4544276fce24f1020f5423ddb16ec255c8d'
 
 [http_service]
   internal_port = 3000

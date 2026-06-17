@@ -66,6 +66,19 @@ export interface Attendance extends PBRecord {
 }
 
 /**
+ * Idempotency log for automated ride reminders. One row per (ride, stage):
+ * the reminder cron claims a stage by creating the row, and the unique
+ * (route, stage) index guarantees a ride is never reminded twice for the
+ * same stage — even if the hourly job overlaps or retries.
+ */
+export type ReminderStage = 't24' | 't2';
+
+export interface ReminderLog extends PBRecord {
+  route: string;        // relation → Route.id
+  stage: ReminderStage;
+}
+
+/**
  * Web Push subscription. One row per browser/device per user — a single user
  * can have several if they're logged in on phone + desktop. Endpoint is
  * globally unique (it's the push service's address for that device).

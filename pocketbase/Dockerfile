@@ -9,6 +9,7 @@ RUN apk add --no-cache unzip ca-certificates \
   && rm /tmp/pb.zip
 
 COPY data/pb_migrations/ /pb/pb_migrations/
+COPY data/pb_hooks/ /pb/pb_hooks/
 
 EXPOSE 8090
 

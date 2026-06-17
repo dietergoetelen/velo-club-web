@@ -32,7 +32,9 @@
     "turnOn": "Zet aan",
     "turnOff": "Zet uit",
     "working": "Bezig…",
-    "ridePlannedBody": "Nieuwe rit gepland: {name}"
+    "ridePlannedBody": "Nieuwe rit gepland: {name}",
+    "reminderRsvpBody": "Rij je mee? Laat het weten: {name}",
+    "reminderSoonBody": "Vertrekt binnenkort: {name}"
   },
   "mapLayers": {
     "standard": "Standaard",

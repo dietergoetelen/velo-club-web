@@ -8,6 +8,11 @@ primary_region = 'ams'
 
 [build]
 
+[env]
+  # Hourly cron hook (pb_hooks/reminders.pb.js) POSTs the web app's reminder
+  # endpoint with this secret — must match CRON_SECRET on the paceline app.
+  CRON_SECRET = 'a5df989477cee74f268a0ac43eb2a4544276fce24f1020f5423ddb16ec255c8d'
+
 [[mounts]]
   source = 'pb_data'
   destination = '/pb/pb_data'
