@@ -12,6 +12,7 @@ import { RideCard } from '@/components/ride-card';
 import { startOfTodayIso } from '@/lib/dates';
 import { clubRiderTotalsByYear } from '@/lib/stats';
 import { ClubLeaderboard } from '@/components/club-leaderboard';
+import { InviteLink } from '@/components/invite-link';
 import { compareSchedules } from '@/lib/schedules';
 import { PersonalRouteCard } from '@/components/personal-route-card';
 import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, PersonalRoute, ReactionEmoji, RideReaction, Route } from '@/lib/types';
@@ -399,6 +400,14 @@ export default async function ClubPage({
             label:   tMembers('heading'),
             count:   members.length,
             content: (
+        <div className="space-y-5">
+        {isCaptain && (
+          <div className="card p-6">
+            <p className="eyebrow mb-1">{tMembers('inviteHeading')}</p>
+            <p className="text-sm text-ink-soft mb-4">{tMembers('inviteSubtitle')}</p>
+            <InviteLink clubId={club.id} />
+          </div>
+        )}
         <div className="card p-6">
           <ul className="flex flex-wrap gap-5">
             {members.map((m, i) => {
@@ -470,6 +479,7 @@ export default async function ClubPage({
               );
             })}
           </ul>
+        </div>
         </div>
             ),
           },

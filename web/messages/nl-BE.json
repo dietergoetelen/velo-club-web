@@ -176,11 +176,32 @@
       "heading": "Leden",
       "captainAria": "Kapitein",
       "makeCaptain": "Maak kapitein",
-      "fallbackName": "Lid"
+      "fallbackName": "Lid",
+      "inviteHeading": "Nodig leden uit",
+      "inviteSubtitle": "Deel een link — wie hem opent, wordt meteen lid. Geen aanvraag nodig."
+    },
+    "invite": {
+      "button": "Maak uitnodigingslink",
+      "label": "Uitnodigingslink",
+      "copy": "Kopieer",
+      "copied": "✓ Gekopieerd",
+      "regenerate": "Nieuwe link maken",
+      "working": "Bezig…",
+      "hint": "Iedereen met deze link kan lid worden. Maak een nieuwe link om de oude ongeldig te maken.",
+      "failed": "Er ging iets mis. Probeer opnieuw."
     },
     "join": {
       "sending": "Versturen…",
-      "request": "Aanvraag indienen"
+      "request": "Aanvraag indienen",
+      "eyebrow": "Uitnodiging",
+      "loggedInBody": "Je bent uitgenodigd om lid te worden van {name}.",
+      "loggedOutBody": "Je bent uitgenodigd voor {name}. Maak een account of meld je aan om lid te worden.",
+      "joinButton": "Word lid",
+      "createAccount": "Account aanmaken",
+      "signIn": "Ik heb al een account",
+      "invalidTitle": "Uitnodiging niet geldig",
+      "invalidBody": "Deze uitnodigingslink bestaat niet meer of is vervangen door een nieuwe.",
+      "toDashboard": "Naar dashboard"
     },
     "settings": {
       "eyebrow": "Instellingen",

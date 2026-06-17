@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC = ['/login', '/register', '/static'];
+// /join/<token> must be reachable logged-out — it's the invite landing page
+// that routes people into auth and back. Without it here, the middleware
+// bounces invitees to /login and the token is lost.
+const PUBLIC = ['/login', '/register', '/join', '/static'];
 
 function isValidToken(token: string): boolean {
   try {

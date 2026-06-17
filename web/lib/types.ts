@@ -41,6 +41,18 @@ export interface JoinRequest extends PBRecord {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+/**
+ * One reusable invite link per club. The captain shares /join/<token>;
+ * regenerating rotates the token in place (invalidating the old link). Stored
+ * in a superuser-only collection and resolved server-side so tokens never hit
+ * the public API.
+ */
+export interface Invite extends PBRecord {
+  token:      string;
+  club:       string;  // Club.id
+  created_by: string;  // PB user id
+}
+
 export interface Route extends PBRecord {
   club:        string;  // relation → Club.id
   created_by:  string;  // relation → PB user id
