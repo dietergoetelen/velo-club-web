@@ -15,7 +15,7 @@ import { ClubLeaderboard } from '@/components/club-leaderboard';
 import { InviteLink } from '@/components/invite-link';
 import { compareSchedules } from '@/lib/schedules';
 import { PersonalRouteCard } from '@/components/personal-route-card';
-import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, PersonalRoute, ReactionEmoji, RideReaction, Route } from '@/lib/types';
+import type { Attendance, Club, ClubMember, ClubSchedule, JoinRequest, PersonalRoute, ReactionEmoji, RideReaction, Route, RouteBucket } from '@/lib/types';
 import { REACTION_EMOJIS } from '@/lib/types';
 
 const PALETTE = ['#FBBF24', '#F472B6', '#34D399', '#8B5CF6'] as const;
@@ -104,6 +104,11 @@ export default async function ClubPage({
       : Promise.resolve([] as PersonalRoute[]),
   ]);
   const pastCount = pastList?.totalItems ?? 0;
+
+  // Soonest-closing open route vote, if any — surfaced above the rides list.
+  const openBucket = await pb.collection('route_buckets')
+    .getFirstListItem<RouteBucket>(`club = "${club.id}" && status = "open"`, { sort: 'closes_at', requestKey: null })
+    .catch(() => null);
 
   const rideIdFilter = rides.length > 0
     ? rides.map(r => `route = "${r.id}"`).join(' || ')
@@ -321,6 +326,26 @@ export default async function ClubPage({
             label:   tDetail('tabRides'),
             count:   rides.length,
             content: <>
+        {/* Route vote: jump to an open one, or (captain) start one. */}
+        {openBucket ? (
+          <div className="card p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="eyebrow mb-0.5">{tDetail('bucketBannerEyebrow')}</p>
+              <p className="font-heading font-black text-ink">{tDetail('bucketBannerTitle')}</p>
+            </div>
+            <Link href={`/clubs/${slug}/buckets/${openBucket.id}`} className="btn-primary text-sm shrink-0">
+              {tDetail('bucketBannerCta')}
+            </Link>
+          </div>
+        ) : isCaptain ? (
+          <div className="card p-5 mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-sm text-ink-soft">{tDetail('bucketCreatePrompt')}</p>
+            <Link href={`/clubs/${slug}/buckets/new`} className="btn-secondary text-sm shrink-0">
+              {tDetail('bucketCreateCta')}
+            </Link>
+          </div>
+        ) : null}
+
         {rides.length === 0 ? (
           <div className="card p-10 text-center">
             <div className="flex justify-center mb-5" aria-hidden="true">

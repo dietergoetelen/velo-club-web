@@ -28,3 +28,29 @@ cronAdd("rideReminders", "0 * * * *", () => {
     console.log("[rideReminders] request failed:", err);
   }
 });
+
+// Close route-bucket votes past their deadline and spawn the winning ride.
+// Same single-scheduler rationale as above.
+cronAdd("closeBuckets", "5 * * * *", () => {
+  const base   = $os.getenv("WEB_CRON_URL") ||
+    "http://paceline.internal:3000/api/cron/ride-reminders";
+  const url    = base.replace("/ride-reminders", "/close-buckets");
+  const secret = $os.getenv("CRON_SECRET");
+
+  if (!secret) {
+    console.log("[closeBuckets] CRON_SECRET not set — skipping");
+    return;
+  }
+
+  try {
+    const res = $http.send({
+      url:     url,
+      method:  "POST",
+      headers: { "x-cron-secret": secret },
+      timeout: 120,
+    });
+    console.log("[closeBuckets] tick →", res.statusCode, res.raw);
+  } catch (err) {
+    console.log("[closeBuckets] request failed:", err);
+  }
+});

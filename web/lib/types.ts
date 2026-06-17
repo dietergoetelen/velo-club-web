@@ -72,6 +72,34 @@ export interface Vote extends PBRecord {
   going: boolean;
 }
 
+/**
+ * Route bucket — a captain-opened poll for picking the next ride's route.
+ * Members add candidate routes (from the personal-route library) and cast one
+ * vote each; when it closes (deadline cron, or the captain early/overriding)
+ * the winning route + `ride_date` spawn the actual club ride.
+ */
+export interface RouteBucket extends PBRecord {
+  club:          string;            // Club.id
+  ride_date:     string;            // ISO — when the chosen ride happens
+  closes_at:     string;            // ISO — voting deadline
+  status:        'open' | 'closed';
+  created_by:    string;            // PB user id (captain)
+  winning_route: string;            // PersonalRoute.id; '' until resolved
+  created_ride:  string;            // Route.id of the spawned ride; '' until resolved
+}
+
+export interface BucketOption extends PBRecord {
+  bucket:   string;  // RouteBucket.id
+  route:    string;  // PersonalRoute.id (the candidate)
+  added_by: string;  // PB user id
+}
+
+export interface BucketVote extends PBRecord {
+  bucket: string;  // RouteBucket.id
+  option: string;  // BucketOption.id
+  user:   string;  // PB user id
+}
+
 export interface Attendance extends PBRecord {
   route: string; // relation → Route.id
   user:  string; // relation → PB user id
