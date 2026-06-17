@@ -23,6 +23,13 @@
     "signOut": "Afmelden",
     "editProfile": "Bewerk je profiel"
   },
+  "nextRide": {
+    "label": "Volgende rit",
+    "none": "Geen geplande rit",
+    "join": "Ik kom mee",
+    "joined": "✓ Ik kom mee",
+    "viewRide": "Bekijk rit →"
+  },
   "push": {
     "onTitle": "Meldingen staan aan",
     "onHint": "Je krijgt een melding wanneer er een nieuwe rit wordt gepland.",

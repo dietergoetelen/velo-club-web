@@ -7,6 +7,8 @@ import { JoinRequestForm } from '@/app/(app)/clubs/[slug]/join-request-form';
 import { markdownToPreview } from '@/lib/markdown';
 import { PersonalRouteCard } from '@/components/personal-route-card';
 import { PushNotificationsToggle } from '@/components/push-notifications-toggle';
+import { ClubCard } from '@/components/club-card';
+import { getNextRideForClub, type NextRide } from '@/lib/next-ride';
 import type { Club, ClubMember, JoinRequest, PersonalRoute } from '@/lib/types';
 
 function greetingKey(): 'greetingMorning' | 'greetingAfternoon' | 'greetingEvening' {
@@ -59,6 +61,16 @@ export default async function DashboardPage() {
     .catch(() => []);
 
   const tRoutes = await getTranslations('routes.dashboard');
+
+  // Soonest upcoming ride per club, keyed by club id (null when nothing's
+  // coming up). Folded into each club card rather than its own section.
+  const nextByClub = new Map<string, NextRide | null>(
+    await Promise.all(
+      myClubs.map(async club =>
+        [club.id, await getNextRideForClub(pb, club.id, user.id)] as const,
+      ),
+    ),
+  );
 
   const firstName = user.name?.split(' ')[0] || user.email.split('@')[0];
 
@@ -118,7 +130,7 @@ export default async function DashboardPage() {
             from the profile page from then on) ──────────────────────────── */}
       <PushNotificationsToggle hideWhenSubscribed />
 
-      {/* ── My clubs ──────────────────────────────────────────────────── */}
+      {/* ── My clubs (each tile carries the club's next ride + RSVP) ───── */}
       <section>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -162,40 +174,13 @@ export default async function DashboardPage() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
             {myClubs.map((club, i) => (
-              <Link
+              <ClubCard
                 key={club.id}
-                href={`/clubs/${club.slug}`}
-                className="card-link p-6 group"
-              >
-                {/* Colored accent ball */}
-                <div
-                  className="w-11 h-11 rounded-full mb-4 shrink-0"
-                  style={{
-                    backgroundColor: ACCENT_COLORS[i % ACCENT_COLORS.length],
-                    border: '2px solid var(--ink)',
-                    boxShadow: '3px 3px 0px var(--ink)',
-                  }}
-                  aria-hidden="true"
-                />
-
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <p className="font-heading font-black text-lg text-ink leading-snug group-hover:text-accent transition-colors duration-200">
-                    {club.name}
-                  </p>
-                  {roleFor(club.id) === 'captain'
-                    ? <span className="badge-brand shrink-0">{t('captainBadge')}</span>
-                    : <span className="badge-neutral shrink-0">{t('memberBadge')}</span>
-                  }
-                </div>
-
-                {club.description && (
-                  <p className="text-sm text-ink-soft line-clamp-2">{markdownToPreview(club.description)}</p>
-                )}
-
-                <p className="mt-4 text-xs font-black text-ink-soft group-hover:text-accent transition-colors duration-200 uppercase tracking-wide">
-                  {t('viewClub')}
-                </p>
-              </Link>
+                club={club}
+                role={roleFor(club.id)}
+                index={i}
+                next={nextByClub.get(club.id) ?? null}
+              />
             ))}
           </div>
         )}

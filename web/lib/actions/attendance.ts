@@ -37,4 +37,7 @@ export async function toggleAttendance(form: FormData): Promise<void> {
 
   revalidatePath(`/clubs/${slug}`);
   revalidatePath(`/clubs/${slug}/rides/${rideId}`);
+  // The dashboard's next-ride card carries the same RSVP toggle, so it has to
+  // re-render when attendance changes from anywhere.
+  revalidatePath('/dashboard');
 }
